@@ -1,6 +1,5 @@
 package app.neonrush.domain.usecase
 
-
 import app.neonrush.data.model.GameItem
 import app.neonrush.data.model.ItemType
 import kotlin.math.hypot
@@ -27,6 +26,7 @@ class CollisionDetectionUseCase {
         scoreMultiplier: Float,
         combo: Int,
         elapsedTime: Long,
+        currentTime: Long,
         lastBonusTime: Long
     ): CollisionResult {
 
@@ -39,10 +39,9 @@ class CollisionDetectionUseCase {
             return CollisionResult(hit = false, itemType = null, shouldRemove = false)
         }
 
-        // Collision détectée
         return when (item.type) {
             ItemType.BONUS -> handleBonusCollision(
-                scoreMultiplier, combo, elapsedTime, lastBonusTime
+                scoreMultiplier, combo, elapsedTime, currentTime, lastBonusTime
             )
 
             ItemType.SHIELD -> CollisionResult(
@@ -67,6 +66,7 @@ class CollisionDetectionUseCase {
         scoreMultiplier: Float,
         combo: Int,
         elapsedTime: Long,
+        currentTime: Long,
         lastBonusTime: Long
     ): CollisionResult {
         val timeBonus = (elapsedTime / 10).toInt()
@@ -74,8 +74,11 @@ class CollisionDetectionUseCase {
         val basePoints = (1 + timeBonus + comboBonus)
         val points = (basePoints * scoreMultiplier).toInt()
 
-        val currentTime = System.currentTimeMillis()
-        val shouldIncrementCombo = currentTime - lastBonusTime < 1500
+        // ← FIX CRITIQUE: Vérifier si moins de 1.5 secondes depuis le dernier bonus
+        val timeSinceLastBonus = currentTime - lastBonusTime
+        val shouldIncrementCombo = timeSinceLastBonus < 1500
+
+        println("🔍 COMBO CHECK: temps depuis dernier bonus = ${timeSinceLastBonus}ms, shouldIncrement = $shouldIncrementCombo")
 
         return CollisionResult(
             hit = true,

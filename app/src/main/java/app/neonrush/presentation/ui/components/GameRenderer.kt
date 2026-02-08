@@ -70,7 +70,7 @@ private fun DrawScope.drawShieldItem(item: GameItem) {
     val radius = item.size / 2
     drawCircle(
         brush = Brush.radialGradient(
-            colors = listOf(Color(0xFF4ADE80), Color(0xFF166534)),
+            colors = listOf(Color(0xFF7DD3FC), Color(0xFF1E40AF)),
             center = Offset(item.x, item.y),
             radius = radius
         ),
@@ -78,7 +78,7 @@ private fun DrawScope.drawShieldItem(item: GameItem) {
         center = Offset(item.x, item.y)
     )
     drawCircle(
-        color = Color(0xFF22C55E),
+        color = Color(0xFF38BDF8),
         radius = radius,
         center = Offset(item.x, item.y),
         style = Stroke(width = 3f)
@@ -202,12 +202,12 @@ fun DrawScope.drawParticles(particles: List<Particle>) {
 
 fun DrawScope.drawShieldAura(playerX: Float, playerY: Float, shieldAlpha: Float) {
     drawCircle(
-        color = Color(0xFF22C55E).copy(alpha = shieldAlpha * 0.25f),
+        color = Color(0xFF38BDF8).copy(alpha = shieldAlpha * 0.25f),  // ← BLEU
         radius = 85f,
         center = Offset(playerX, playerY)
     )
     drawCircle(
-        color = Color(0xFF22C55E).copy(alpha = shieldAlpha),
+        color = Color(0xFF38BDF8).copy(alpha = shieldAlpha),  // ← BLEU
         radius = 75f,
         center = Offset(playerX, playerY),
         style = Stroke(width = 5f)

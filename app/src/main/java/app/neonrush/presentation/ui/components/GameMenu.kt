@@ -106,6 +106,7 @@ private fun MainMenuContent() {
     InstructionItem("🔺", "Triangles rouges = Danger mortel")
     InstructionItem("🛡️", "Ballon bleu = Protection (5s)")
     InstructionItem("⭐", "Étoile jaune = Score ×2 (6s)")
+    InstructionItem("🔥", "Combo rapide = Ballons bonus !")
 }
 
 @Composable

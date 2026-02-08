@@ -78,7 +78,7 @@ fun GameScreen(
         gameState.combo > 5 -> Color(0xFFa78bfa)
         gameState.hasShield -> Color(0xFF22C55E)
         gameState.scoreMultiplier > 1f -> Color(0xFFfbbf24)
-        else -> Color(0xFF22C55E)
+        else -> Color(0xFF60A5FA)
     }
 
     Surface(
@@ -174,7 +174,6 @@ fun GameScreen(
                 )
             }
 
-            // Menu
             if (!gameState.isActive) {
                 GameMenu(
                     gameState = gameState,

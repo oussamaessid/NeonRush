@@ -1,6 +1,5 @@
 package app.neonrush.domain.usecase
 
-
 import app.neonrush.data.model.GameItem
 import app.neonrush.data.model.ItemType
 import kotlin.math.abs
@@ -27,17 +26,19 @@ class SpawnItemUseCase {
         val safeZoneStart = safeZoneIndex * zoneWidth
         val safeZoneEnd = safeZoneStart + zoneWidth
 
-        // Ratio de hazards
+        // ============================================
+        // RATIO DE HAZARDS RÉDUIT = PLUS DE CARRÉS BLEUS
+        // ============================================
         val hazardRatio = when {
-            elapsedTime < 8  -> 0.40f
-            elapsedTime < 15 -> 0.45f
-            difficultyLevel < 7f  -> 0.50f
-            difficultyLevel < 12f -> 0.58f
-            difficultyLevel < 18f -> 0.65f
-            difficultyLevel < 25f -> 0.70f
-            else -> 0.74f
+            elapsedTime < 8  -> 0.30f   // ← RÉDUIT de 0.40f à 0.30f
+            elapsedTime < 15 -> 0.35f   // ← RÉDUIT de 0.45f à 0.35f
+            difficultyLevel < 7f  -> 0.40f   // ← RÉDUIT de 0.50f à 0.40f
+            difficultyLevel < 12f -> 0.45f   // ← RÉDUIT de 0.58f à 0.45f
+            difficultyLevel < 18f -> 0.50f   // ← RÉDUIT de 0.65f à 0.50f
+            difficultyLevel < 25f -> 0.55f   // ← RÉDUIT de 0.70f à 0.55f
+            else -> 0.60f                     // ← RÉDUIT de 0.74f à 0.60f
         }.let { base ->
-            if (hasShield || scoreMultiplier > 1f) base + 0.06f
+            if (hasShield || scoreMultiplier > 1f) base + 0.05f  // ← RÉDUIT de 0.06f
             else base
         }
 
@@ -59,20 +60,22 @@ class SpawnItemUseCase {
             ))
         }
 
-        // Burst count
+        // ============================================
+        // BURST COUNT AUGMENTÉ = PLUS D'ITEMS SPAWN
+        // ============================================
         val burstCount = when {
-            difficultyLevel < 4f  -> 1
-            difficultyLevel < 9f  -> if (Random.nextFloat() < 0.35f) 2 else 1
+            difficultyLevel < 4f  -> 2           // ← AUGMENTÉ de 1 à 2
+            difficultyLevel < 9f  -> if (Random.nextFloat() < 0.40f) 3 else 2  // ← AUGMENTÉ
             difficultyLevel < 16f -> when {
-                Random.nextFloat() < 0.25f -> 3
-                Random.nextFloat() < 0.50f -> 2
-                else -> 1
+                Random.nextFloat() < 0.30f -> 4  // ← AUGMENTÉ
+                Random.nextFloat() < 0.55f -> 3  // ← AUGMENTÉ
+                else -> 2                         // ← AUGMENTÉ
             }
             else -> when {
-                Random.nextFloat() < 0.20f -> 4
-                Random.nextFloat() < 0.45f -> 3
-                Random.nextFloat() < 0.65f -> 2
-                else -> 1
+                Random.nextFloat() < 0.25f -> 5  // ← AUGMENTÉ
+                Random.nextFloat() < 0.50f -> 4  // ← AUGMENTÉ
+                Random.nextFloat() < 0.70f -> 3  // ← AUGMENTÉ
+                else -> 2                         // ← AUGMENTÉ
             }
         }
 

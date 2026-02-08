@@ -40,12 +40,18 @@ class GameViewModel(
     private var targetX = 0f
     private var isDragging = false
 
+    // Pour le système de récompense combo
+    private var lastComboCheck = 0
+    private var comboJustBroke = false
+
     fun startGame() {
         repository.resetGame()
         startTime = System.currentTimeMillis()
         lastSpawnTime = 0L
         lastBonusTime = 0L
         targetX = gameState.value.playerX
+        lastComboCheck = 0
+        comboJustBroke = false
 
         repository.updateGameState { it.copy(isActive = true, currentSpeed = 12f) }
         _powerUpState.value = PowerUpState()
@@ -91,6 +97,7 @@ class GameViewModel(
             updatePlayerMovement()
             updatePowerUps(currentTime)
             updateDifficulty()
+            checkComboReward(currentTime)
             spawnItems(currentTime)
             updateItems(currentTime)
             updateParticles()
@@ -158,6 +165,61 @@ class GameViewModel(
         repository.updateGameState { it.copy(currentSpeed = settings.speed) }
     }
 
+    // ============================================
+    // SYSTÈME DE RÉCOMPENSE COMBO - AVEC BALLONS MULTIPLES
+    // ============================================
+    private fun checkComboReward(currentTime: Long) {
+        val state = gameState.value
+
+        // Vérifier si le combo vient de se casser (était >= 5, maintenant <= 1)
+        if (lastComboCheck >= 5 && state.combo <= 1) {
+            // Vérifier qu'on n'a pas déjà spawné et qu'assez de temps s'est écoulé
+            if (!comboJustBroke && currentTime - lastBonusTime > 1500 && state.screenWidth > 0) {
+                // Calculer le nombre de ballons en fonction du combo précédent
+                val balloonCount = when {
+                    lastComboCheck >= 15 -> 3  // Combo 15+ = 3 ballons
+                    lastComboCheck >= 10 -> 2  // Combo 10+ = 2 ballons
+                    else -> 1                   // Combo 5+ = 1 ballon
+                }
+
+                // Spawner plusieurs ballons bleus
+                repeat(balloonCount) { index ->
+                    val offsetRange = 250f
+                    val offset = when (index) {
+                        0 -> 0f              // Centre
+                        1 -> -offsetRange    // Gauche
+                        else -> offsetRange  // Droite
+                    }
+
+                    val balloonX = (state.playerX + offset)
+                        .coerceIn(50f, state.screenWidth - 50f)
+
+                    repository.addItem(
+                        GameItem(
+                            x = balloonX,
+                            y = -60f - (index * 80f), // Décalage vertical
+                            size = 72f,
+                            type = ItemType.SHIELD,
+                            speed = state.currentSpeed * 0.65f
+                        )
+                    )
+                }
+
+                comboJustBroke = true
+
+                // Debug log
+                println("🎁 COMBO REWARD! Combo était $lastComboCheck → $balloonCount ballon(s) bleu(s)")
+            }
+        }
+
+        // Réinitialiser le flag quand le combo recommence à monter
+        if (state.combo >= 3) {
+            comboJustBroke = false
+        }
+
+        lastComboCheck = state.combo
+    }
+
     private fun spawnItems(currentTime: Long) {
         val state = gameState.value
         val difficultyLevel = (state.elapsedTime / 10f) + (state.score / 40f)
@@ -207,6 +269,7 @@ class GameViewModel(
                 scoreMultiplier = powerUp.scoreMultiplier,
                 combo = state.combo,
                 elapsedTime = state.elapsedTime,
+                currentTime = currentTime,
                 lastBonusTime = lastBonusTime
             )
 
@@ -243,7 +306,7 @@ class GameViewModel(
             collision.activateShield -> activateShield(item, currentTime)
             collision.activateMultiplier -> activateMultiplier(item, currentTime)
             collision.comboIncrement -> handleBonusWithCombo(collision, item, currentTime)
-            else -> handleBonus(collision, item)
+            else -> handleBonus(collision, item, currentTime) // ← PASSER currentTime
         }
     }
 
@@ -262,7 +325,7 @@ class GameViewModel(
     }
 
     private fun handleShieldBlock(item: GameItem) {
-        addParticles(item.x, item.y, Color(0xFF22C55E), 24)
+        addParticles(item.x, item.y, Color(0xFF38BDF8), 24)
         applyScreenShake(8f, 0.85f)
     }
 
@@ -272,7 +335,7 @@ class GameViewModel(
             shieldEndTime = currentTime + 5500
         )
         repository.updateGameState { it.copy(hasShield = true) }
-        addParticles(item.x, item.y, Color(0xFF22C55E), 16)
+        addParticles(item.x, item.y, Color(0xFF38BDF8), 16)
     }
 
     private fun activateMultiplier(item: GameItem, currentTime: Long) {
@@ -286,7 +349,7 @@ class GameViewModel(
 
     private fun handleBonusWithCombo(collision: CollisionResult, item: GameItem, currentTime: Long) {
         val newCombo = gameState.value.combo + 1
-        lastBonusTime = currentTime
+        lastBonusTime = currentTime // ← MET À JOUR lastBonusTime
 
         repository.updateGameState {
             it.copy(
@@ -302,8 +365,24 @@ class GameViewModel(
         if (newCombo > 5) {
             addParticles(item.x, item.y, Color(0xFFa78bfa), 6)
         }
+
+        println("✅ COMBO INCREMENT: combo = $newCombo, lastBonusTime mis à jour = $currentTime")
     }
 
+    private fun handleBonus(collision: CollisionResult, item: GameItem, currentTime: Long) { // ← AJOUT currentTime
+        lastBonusTime = currentTime // ← FIX CRITIQUE: mettre à jour ici aussi !
+
+        repository.updateGameState {
+            it.copy(
+                score = it.score + collision.points,
+                greensCaught = it.greensCaught + 1,
+                combo = 1 // ← Reset combo à 1
+            )
+        }
+        addParticles(item.x, item.y, Color(0xFF38BDF8), 10)
+
+        println("🔄 COMBO RESET: combo = 1, lastBonusTime mis à jour = $currentTime")
+    }
     private fun handleBonus(collision: CollisionResult, item: GameItem) {
         repository.updateGameState {
             it.copy(
@@ -368,7 +447,6 @@ class GameViewModel(
     }
 }
 
-// Extension pour convertir Flow en StateFlow dans le viewModelScope
 private fun <T> Flow<T>.stateAsStateFlow(scope: CoroutineScope): StateFlow<T> {
     return this.stateIn(scope, SharingStarted.Eagerly, (this as StateFlow<T>).value)
 }

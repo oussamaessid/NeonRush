@@ -134,7 +134,7 @@ private fun PowerUpsDisplay(
             Text(text = "🛡️", fontSize = 28.sp)
             Text(
                 text = "${shieldTimeRemaining}s",
-                color = Color(0xFF22C55E),
+                color = Color(0xFF38BDF8),  // ← BLEU au lieu de vert
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Black
             )
