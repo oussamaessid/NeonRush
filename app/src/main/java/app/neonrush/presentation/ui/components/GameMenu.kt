@@ -104,7 +104,7 @@ private fun MainMenuContent() {
 
     InstructionItem("🟦", "Carrés bleus = Points ")
     InstructionItem("🔺", "Triangles rouges = Danger mortel")
-    InstructionItem("🛡️", "Ballon bleu = Protection (5s)")
+    InstructionItem("🛡️", "Ballon vert = Protection (5s)")  // ✅ VERT au lieu de bleu
     InstructionItem("⭐", "Étoile jaune = Score ×2 (6s)")
     InstructionItem("🔥", "Combo rapide = Ballons bonus !")
 }

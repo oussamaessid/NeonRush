@@ -64,15 +64,15 @@ fun GameHud(
                 bestTime = gameState.bestTime
             )
 
-            // Power-ups
-            if (gameState.hasShield || gameState.scoreMultiplier > 1f) {
-                PowerUpsDisplay(
-                    hasShield = gameState.hasShield,
-                    shieldTimeRemaining = shieldTimeRemaining,
-                    scoreMultiplier = gameState.scoreMultiplier,
-                    multiplierTimeRemaining = multiplierTimeRemaining
-                )
-            }
+            // ✅ Power-ups ET Combo (tous au même endroit)
+            PowerUpsAndComboDisplay(
+                hasShield = gameState.hasShield,
+                shieldTimeRemaining = shieldTimeRemaining,
+                scoreMultiplier = gameState.scoreMultiplier,
+                multiplierTimeRemaining = multiplierTimeRemaining,
+                combo = gameState.combo,
+                comboTimeRemaining = gameState.comboTimeRemaining
+            )
 
             // Score
             ScoreDisplay(
@@ -80,12 +80,6 @@ fun GameHud(
                 bestScore = gameState.bestScore,
                 scoreMultiplier = gameState.scoreMultiplier
             )
-        }
-
-        // Combo
-        if (gameState.combo > 2) {
-            Spacer(modifier = Modifier.height(12.dp))
-            ComboDisplay(combo = gameState.combo)
         }
     }
 }
@@ -120,26 +114,31 @@ private fun TimeDisplay(
 }
 
 @Composable
-private fun PowerUpsDisplay(
+private fun PowerUpsAndComboDisplay(
     hasShield: Boolean,
     shieldTimeRemaining: Int,
     scoreMultiplier: Float,
-    multiplierTimeRemaining: Int
+    multiplierTimeRemaining: Int,
+    combo: Int,
+    comboTimeRemaining: Int
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(horizontal = 8.dp)
     ) {
+        // ✅ Shield (affiche uniquement si actif)
         if (hasShield && shieldTimeRemaining > 0) {
             Text(text = "🛡️", fontSize = 28.sp)
             Text(
                 text = "${shieldTimeRemaining}s",
-                color = Color(0xFF38BDF8),  // ← BLEU au lieu de vert
+                color = Color(0xFF22C55E),  // 🟢 VERT
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Black
             )
+            Spacer(modifier = Modifier.height(4.dp))
         }
 
+        // ✅ Multiplier (affiche uniquement si actif)
         if (scoreMultiplier > 1f && multiplierTimeRemaining > 0) {
             Text(
                 text = "⭐",
@@ -153,6 +152,47 @@ private fun PowerUpsDisplay(
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Black
             )
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+
+        // ✅ COMBO (affiche uniquement si ≥ 3, AVEC TIMER)
+        if (combo >= 3 && comboTimeRemaining > 0) {
+            val comboColor = when {
+                combo >= 10 -> Color(0xFFEC4899)  // 🟣 Rose pour combo 10+
+                combo >= 5 -> Color(0xFFa78bfa)   // 💜 Violet pour combo 5+
+                else -> Color(0xFF7DD3FC)         // 🔵 Cyan pour combo 3+
+            }
+
+            Text(
+                text = "🔥",
+                fontSize = when {
+                    combo >= 10 -> 28.sp
+                    combo >= 6 -> 24.sp
+                    else -> 20.sp
+                }
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "×$combo",
+                    color = comboColor,
+                    fontSize = when {
+                        combo >= 10 -> 28.sp
+                        combo >= 6 -> 24.sp
+                        else -> 20.sp
+                    },
+                    fontWeight = FontWeight.Black
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "${comboTimeRemaining}s",
+                    color = comboColor.copy(alpha = 0.8f),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
         }
     }
 }
@@ -195,24 +235,5 @@ private fun ScoreDisplay(
                 fontWeight = FontWeight.Bold
             )
         }
-    }
-}
-
-@Composable
-private fun ComboDisplay(combo: Int) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "🔥 COMBO ×$combo",
-            color = Color(0xFFa78bfa),
-            fontSize = when {
-                combo > 10 -> 28.sp
-                combo > 6 -> 24.sp
-                else -> 20.sp
-            },
-            fontWeight = FontWeight.Black
-        )
     }
 }

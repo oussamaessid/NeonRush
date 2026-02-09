@@ -40,7 +40,8 @@ class GameViewModel(
     private var targetX = 0f
     private var isDragging = false
 
-    // Pour le système de récompense combo
+    // ✅ COMBO AVEC TIMER (comme shield/multiplier)
+    private var comboEndTime = 0L
     private var lastComboCheck = 0
     private var comboJustBroke = false
 
@@ -52,6 +53,7 @@ class GameViewModel(
         targetX = gameState.value.playerX
         lastComboCheck = 0
         comboJustBroke = false
+        comboEndTime = 0L  // ✅ Reset du timer combo
 
         repository.updateGameState { it.copy(isActive = true, currentSpeed = 12f) }
         _powerUpState.value = PowerUpState()
@@ -96,6 +98,7 @@ class GameViewModel(
             updateElapsedTime(currentTime)
             updatePlayerMovement()
             updatePowerUps(currentTime)
+            updateComboTimer(currentTime)  // ✅ NOUVEAU: Gestion du timer combo
             updateDifficulty()
             checkComboReward(currentTime)
             spawnItems(currentTime)
@@ -159,6 +162,22 @@ class GameViewModel(
         }
     }
 
+    // ✅ NOUVEAU: Gestion du timer de combo (comme shield/multiplier)
+    private fun updateComboTimer(currentTime: Long) {
+        val state = gameState.value
+
+        // Si combo actif ET timer expiré → reset à 0
+        if (state.combo >= 3 && currentTime > comboEndTime) {
+            repository.updateGameState { it.copy(combo = 0, comboTimeRemaining = 0) }
+            println("⏱️ COMBO EXPIRED: combo reset à 0")
+        }
+        // Si combo actif → afficher le temps restant
+        else if (state.combo >= 3) {
+            val remaining = ((comboEndTime - currentTime) / 1000).toInt() + 1
+            repository.updateGameState { it.copy(comboTimeRemaining = remaining) }
+        }
+    }
+
     private fun updateDifficulty() {
         val state = gameState.value
         val settings = difficultyUseCase.execute(state.elapsedTime, state.score)
@@ -166,13 +185,13 @@ class GameViewModel(
     }
 
     // ============================================
-    // SYSTÈME DE RÉCOMPENSE COMBO - AVEC BALLONS MULTIPLES
+    // SYSTÈME DE RÉCOMPENSE COMBO
     // ============================================
     private fun checkComboReward(currentTime: Long) {
         val state = gameState.value
 
-        // Vérifier si le combo vient de se casser (était >= 5, maintenant <= 1)
-        if (lastComboCheck >= 5 && state.combo <= 1) {
+        // Vérifier si le combo vient de se casser (était >= 5, maintenant < 3)
+        if (lastComboCheck >= 5 && state.combo < 3) {
             // Vérifier qu'on n'a pas déjà spawné et qu'assez de temps s'est écoulé
             if (!comboJustBroke && currentTime - lastBonusTime > 1500 && state.screenWidth > 0) {
                 // Calculer le nombre de ballons en fonction du combo précédent
@@ -182,7 +201,7 @@ class GameViewModel(
                     else -> 1                   // Combo 5+ = 1 ballon
                 }
 
-                // Spawner plusieurs ballons bleus
+                // Spawner plusieurs ballons bleus (SHIELD)
                 repeat(balloonCount) { index ->
                     val offsetRange = 250f
                     val offset = when (index) {
@@ -206,13 +225,11 @@ class GameViewModel(
                 }
 
                 comboJustBroke = true
-
-                // Debug log
-                println("🎁 COMBO REWARD! Combo était $lastComboCheck → $balloonCount ballon(s) bleu(s)")
+                println("🎁 COMBO REWARD! Combo était $lastComboCheck → $balloonCount ballon(s)")
             }
         }
 
-        // Réinitialiser le flag quand le combo recommence à monter
+        // Réinitialiser le flag quand le combo recommence
         if (state.combo >= 3) {
             comboJustBroke = false
         }
@@ -306,7 +323,7 @@ class GameViewModel(
             collision.activateShield -> activateShield(item, currentTime)
             collision.activateMultiplier -> activateMultiplier(item, currentTime)
             collision.comboIncrement -> handleBonusWithCombo(collision, item, currentTime)
-            else -> handleBonus(collision, item, currentTime) // ← PASSER currentTime
+            else -> handleBonus(collision, item, currentTime)
         }
     }
 
@@ -347,9 +364,11 @@ class GameViewModel(
         addParticles(item.x, item.y, Color(0xFFfbbf24), 16)
     }
 
+    // ✅ COMBO INCREMENT avec timer de 3 secondes
     private fun handleBonusWithCombo(collision: CollisionResult, item: GameItem, currentTime: Long) {
         val newCombo = gameState.value.combo + 1
-        lastBonusTime = currentTime // ← MET À JOUR lastBonusTime
+        lastBonusTime = currentTime
+        comboEndTime = currentTime + 3000  // ✅ Combo dure 3 secondes
 
         repository.updateGameState {
             it.copy(
@@ -366,32 +385,24 @@ class GameViewModel(
             addParticles(item.x, item.y, Color(0xFFa78bfa), 6)
         }
 
-        println("✅ COMBO INCREMENT: combo = $newCombo, lastBonusTime mis à jour = $currentTime")
+        println("✅ COMBO INCREMENT: combo = $newCombo, expire dans 3s")
     }
 
-    private fun handleBonus(collision: CollisionResult, item: GameItem, currentTime: Long) { // ← AJOUT currentTime
-        lastBonusTime = currentTime // ← FIX CRITIQUE: mettre à jour ici aussi !
+    // ✅ COMBO START à 3 avec timer de 3 secondes
+    private fun handleBonus(collision: CollisionResult, item: GameItem, currentTime: Long) {
+        lastBonusTime = currentTime
+        comboEndTime = currentTime + 3000  // ✅ Combo dure 3 secondes
 
         repository.updateGameState {
             it.copy(
                 score = it.score + collision.points,
                 greensCaught = it.greensCaught + 1,
-                combo = 1 // ← Reset combo à 1
+                combo = 3  // ← COMMENCE À 3
             )
         }
         addParticles(item.x, item.y, Color(0xFF38BDF8), 10)
 
-        println("🔄 COMBO RESET: combo = 1, lastBonusTime mis à jour = $currentTime")
-    }
-    private fun handleBonus(collision: CollisionResult, item: GameItem) {
-        repository.updateGameState {
-            it.copy(
-                score = it.score + collision.points,
-                greensCaught = it.greensCaught + 1,
-                combo = 1
-            )
-        }
-        addParticles(item.x, item.y, Color(0xFF38BDF8), 10)
+        println("🔄 COMBO START: combo = 3, expire dans 3s")
     }
 
     private fun handleNearMiss() {

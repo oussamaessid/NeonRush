@@ -68,9 +68,10 @@ private fun DrawScope.drawBonusItem(item: GameItem) {
 
 private fun DrawScope.drawShieldItem(item: GameItem) {
     val radius = item.size / 2
+    // ✅ Ballon shield en VERT
     drawCircle(
         brush = Brush.radialGradient(
-            colors = listOf(Color(0xFF7DD3FC), Color(0xFF1E40AF)),
+            colors = listOf(Color(0xFF4ADE80), Color(0xFF16A34A)),  // 🟢 Vert clair → Vert foncé
             center = Offset(item.x, item.y),
             radius = radius
         ),
@@ -78,7 +79,7 @@ private fun DrawScope.drawShieldItem(item: GameItem) {
         center = Offset(item.x, item.y)
     )
     drawCircle(
-        color = Color(0xFF38BDF8),
+        color = Color(0xFF22C55E),  // 🟢 Bordure verte
         radius = radius,
         center = Offset(item.x, item.y),
         style = Stroke(width = 3f)
@@ -145,10 +146,11 @@ fun DrawScope.drawShieldIcon(cx: Float, cy: Float, s: Float) {
     path.lineTo(left, top + s * 0.3f)
     path.close()
 
-    drawPath(path, color = Color(0xFF38BDF8).copy(alpha = 0.5f))
+    // ✅ Icône shield en VERT
+    drawPath(path, color = Color(0xFF22C55E).copy(alpha = 0.5f))  // 🟢 Fond vert
     drawPath(
         path,
-        color = Color(0xFF7DD3FC),
+        color = Color(0xFF4ADE80),  // 🟢 Bordure vert clair
         style = Stroke(width = 3.5f)
     )
 }
@@ -201,13 +203,14 @@ fun DrawScope.drawParticles(particles: List<Particle>) {
 }
 
 fun DrawScope.drawShieldAura(playerX: Float, playerY: Float, shieldAlpha: Float) {
+    // ✅ Aura shield en VERT
     drawCircle(
-        color = Color(0xFF38BDF8).copy(alpha = shieldAlpha * 0.25f),  // ← BLEU
+        color = Color(0xFF22C55E).copy(alpha = shieldAlpha * 0.25f),  // 🟢 VERT
         radius = 85f,
         center = Offset(playerX, playerY)
     )
     drawCircle(
-        color = Color(0xFF38BDF8).copy(alpha = shieldAlpha),  // ← BLEU
+        color = Color(0xFF22C55E).copy(alpha = shieldAlpha),  // 🟢 VERT
         radius = 75f,
         center = Offset(playerX, playerY),
         style = Stroke(width = 5f)

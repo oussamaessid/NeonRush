@@ -13,6 +13,7 @@ data class GameState(
     val shieldTimeRemaining: Int = 0,
     val scoreMultiplier: Float = 1f,
     val multiplierTimeRemaining: Int = 0,
+    val comboTimeRemaining: Int = 0,
     val currentSpeed: Float = 12f,
     val combo: Int = 0,
     val greensCaught: Int = 0,

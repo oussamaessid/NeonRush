@@ -53,12 +53,19 @@ fun GameScreen(
         label = "shieldAlpha"
     )
 
-    val playerColor = when {
-        gameState.hasShield -> Color(0xFF22C55E)
-        gameState.scoreMultiplier > 1f -> Color(0xFFfbbf24)
-        gameState.combo > 5 -> Color(0xFFa78bfa)
-        else -> Color(0xFF60A5FA)
-    }
+    // ✅ COULEUR DU JOUEUR - VÉRIFIE TIMER COMBO
+    val playerColor by animateColorAsState(
+        targetValue = when {
+            gameState.hasShield -> Color(0xFF22C55E)                                        // 🟢 VERT avec shield
+            gameState.scoreMultiplier > 1f -> Color(0xFFfbbf24)                             // 🟡 Jaune avec multiplier
+            gameState.combo >= 8 && gameState.comboTimeRemaining > 0 -> Color(0xFFEC4899)   // 🟣 Rose combo 8+ ACTIF
+            gameState.combo >= 5 && gameState.comboTimeRemaining > 0 -> Color(0xFFa78bfa)   // 💜 Violet combo 5+ ACTIF
+            gameState.combo >= 3 && gameState.comboTimeRemaining > 0 -> Color(0xFF7DD3FC)   // 🔵 Cyan combo 3+ ACTIF
+            else -> Color(0xFF60A5FA)                                                       // 🔵 Bleu normal
+        },
+        animationSpec = tween(300, easing = FastOutSlowInEasing),                           // Animation rapide pour reset
+        label = "playerColor"
+    )
 
     val playerGradient = remember(playerColor) {
         Brush.radialGradient(
@@ -67,19 +74,28 @@ fun GameScreen(
         )
     }
 
+    // ✅ GLOW SIZE ET COLOR - VÉRIFIE TIMER COMBO
     val glowSize = when {
-        gameState.combo > 8 -> 75f
+        gameState.combo >= 10 && gameState.comboTimeRemaining > 0 -> 80f    // Énorme pour combo 10+ ACTIF
+        gameState.combo >= 8 && gameState.comboTimeRemaining > 0 -> 75f     // Très grand pour combo 8+ ACTIF
+        gameState.combo >= 5 && gameState.comboTimeRemaining > 0 -> 70f     // Grand pour combo 5+ ACTIF
+        gameState.combo >= 3 && gameState.comboTimeRemaining > 0 -> 65f     // Moyen pour combo 3+ ACTIF
         gameState.scoreMultiplier > 1f -> 68f
-        gameState.combo > 3 -> 65f
         else -> 58f
     }
 
-    val glowColor = when {
-        gameState.combo > 5 -> Color(0xFFa78bfa)
-        gameState.hasShield -> Color(0xFF22C55E)
-        gameState.scoreMultiplier > 1f -> Color(0xFFfbbf24)
-        else -> Color(0xFF60A5FA)
-    }
+    val glowColor by animateColorAsState(
+        targetValue = when {
+            gameState.combo >= 8 && gameState.comboTimeRemaining > 0 -> Color(0xFFEC4899)   // 🟣 Rose combo 8+ ACTIF
+            gameState.combo >= 5 && gameState.comboTimeRemaining > 0 -> Color(0xFFa78bfa)   // 💜 Violet combo 5+ ACTIF
+            gameState.combo >= 3 && gameState.comboTimeRemaining > 0 -> Color(0xFF7DD3FC)   // 🔵 Cyan combo 3+ ACTIF
+            gameState.hasShield -> Color(0xFF22C55E)                                        // 🟢 VERT avec shield
+            gameState.scoreMultiplier > 1f -> Color(0xFFfbbf24)                             // 🟡 Jaune avec multiplier
+            else -> Color(0xFF60A5FA)                                                       // 🔵 Bleu normal
+        },
+        animationSpec = tween(300, easing = FastOutSlowInEasing),
+        label = "glowColor"
+    )
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -174,6 +190,7 @@ fun GameScreen(
                 )
             }
 
+            // Menu
             if (!gameState.isActive) {
                 GameMenu(
                     gameState = gameState,
