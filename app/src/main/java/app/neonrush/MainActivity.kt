@@ -30,16 +30,17 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var statsManager: StatsManager
 
-    private var currentScreen = Screen.HOME
+    private var currentScreen  = Screen.HOME
     private var isInBackground = false
+    private var isFirstLaunch  = true   // ← détecte le cold start
 
     private val lifecycleObserver = object : DefaultLifecycleObserver {
         override fun onStart(owner: LifecycleOwner) {
+            // Retour depuis le background (pas le premier lancement)
             if (isInBackground) {
                 isInBackground = false
-                // ✅ App Open UNIQUEMENT au retour sur Home
                 if (currentScreen == Screen.HOME) {
-                    AdManager.showAppOpenAd(this@MainActivity) {}
+                    showAppOpenAdIfReady()
                 }
             }
         }
@@ -59,7 +60,13 @@ class MainActivity : ComponentActivity() {
         ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleObserver)
 
         MobileAds.initialize(this) {
-            AdManager.loadAppOpenAd(this)
+            // Charge la pub et l'affiche dès qu'elle est prête (cold start)
+            AdManager.loadAppOpenAd(this) {
+                if (isFirstLaunch && currentScreen == Screen.HOME) {
+                    isFirstLaunch = false
+                    runOnUiThread { showAppOpenAdIfReady() }
+                }
+            }
             AdManager.loadRewardedAd(this)
         }
 
@@ -73,6 +80,19 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleObserver)
+    }
+
+    // ── Affiche la pub si chargée, recharge ensuite ───────────────────────────
+    private fun showAppOpenAdIfReady() {
+        if (AdManager.isAppOpenAdLoaded()) {
+            AdManager.showAppOpenAd(this) {
+                // Recharge immédiatement pour la prochaine fois
+                AdManager.loadAppOpenAd(this)
+            }
+        } else {
+            // Pas encore chargée : recharge et réessaie au prochain onStart
+            AdManager.loadAppOpenAd(this)
+        }
     }
 
     @Composable

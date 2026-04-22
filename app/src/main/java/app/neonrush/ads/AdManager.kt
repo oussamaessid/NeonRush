@@ -13,7 +13,7 @@ object AdManager {
     // ══════════════════════════════════════════════════════════════════════════
     // 🔧 CHANGE ICI POUR PASSER EN MODE TEST
     // ══════════════════════════════════════════════════════════════════════════
-    private const val IS_PRODUCTION = true   // ← false = prod  |  true = test
+    private const val IS_PRODUCTION = false  // ← false = test  |  true = prod
     // ══════════════════════════════════════════════════════════════════════════
 
     private object TestIds {
@@ -28,20 +28,22 @@ object AdManager {
         const val REWARDED = "ca-app-pub-2498267529185476/7642869688"
     }
 
-    private val APP_OPEN_AD_UNIT_ID = if (IS_PRODUCTION) TestIds.APP_OPEN else ProdIds.APP_OPEN
-    private val BANNER_AD_UNIT_ID   = if (IS_PRODUCTION) TestIds.BANNER   else ProdIds.BANNER
-    private val REWARDED_AD_UNIT_ID = if (IS_PRODUCTION) TestIds.REWARDED else ProdIds.REWARDED
+    private val APP_OPEN_AD_UNIT_ID = if (IS_PRODUCTION) ProdIds.APP_OPEN else TestIds.APP_OPEN
+    private val BANNER_AD_UNIT_ID   = if (IS_PRODUCTION) ProdIds.BANNER   else TestIds.BANNER
+    private val REWARDED_AD_UNIT_ID = if (IS_PRODUCTION) ProdIds.REWARDED else TestIds.REWARDED
 
     private const val TAG = "AdManager"
 
     init {
-        Log.d(TAG, if (IS_PRODUCTION) "🟡 MODE TEST" else "🟢 MODE PRODUCTION")
+        Log.d(TAG, if (IS_PRODUCTION) "🟢 MODE PRODUCTION" else "🟡 MODE TEST")
     }
 
     private var appOpenAd: AppOpenAd? = null
     private var isAppOpenAdShowing = false
 
-    fun loadAppOpenAd(context: Context) {
+    // ── App Open ─────────────────────────────────────────────────────────────
+    // onLoaded : callback optionnel appelé dès que la pub est prête
+    fun loadAppOpenAd(context: Context, onLoaded: (() -> Unit)? = null) {
         val request = AdRequest.Builder().build()
         AppOpenAd.load(
             context,
@@ -51,6 +53,7 @@ object AdManager {
                 override fun onAdLoaded(ad: AppOpenAd) {
                     appOpenAd = ad
                     Log.d(TAG, "App open ad loaded ✓")
+                    onLoaded?.invoke()   // ← notifie MainActivity que la pub est prête
                 }
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     Log.e(TAG, "App open ad failed: ${error.message}")
@@ -61,18 +64,22 @@ object AdManager {
 
     fun showAppOpenAd(activity: Activity, onComplete: () -> Unit) {
         val ad = appOpenAd
-        if (ad == null) { onComplete(); return }
+        if (ad == null) {
+            Log.w(TAG, "App open ad not ready yet")
+            onComplete()
+            return
+        }
 
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
                 appOpenAd = null
                 isAppOpenAdShowing = false
-                loadAppOpenAd(activity)
                 onComplete()
             }
             override fun onAdFailedToShowFullScreenContent(error: AdError) {
                 appOpenAd = null
                 isAppOpenAdShowing = false
+                Log.e(TAG, "App open ad failed to show: ${error.message}")
                 onComplete()
             }
             override fun onAdShowedFullScreenContent() {
