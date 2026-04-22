@@ -3,7 +3,6 @@ package app.neonrush.presentation.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -17,185 +16,137 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import app.neonrush.data.StatsManager
 import app.neonrush.presentation.ui.components.*
 import app.neonrush.presentation.viewmodel.GameViewModel
 
 @Composable
 fun GameScreen(
-    onQuit: () -> Unit,
+    statsManager: StatsManager,
+    onBackToMenu: () -> Unit,
     viewModel: GameViewModel = viewModel()
 ) {
-    val gameState by viewModel.gameState.collectAsState()
-    val items by viewModel.items.collectAsState()
-    val particles by viewModel.particles.collectAsState()
+    val gameState   by viewModel.gameState.collectAsState()
+    val items       by viewModel.items.collectAsState()
+    val particles   by viewModel.particles.collectAsState()
     val visualState by viewModel.visualState.collectAsState()
-    val powerUpState by viewModel.powerUpState.collectAsState()
 
-    BackHandler(enabled = true) { }
+    // Démarre automatiquement à l'entrée dans l'écran
+    LaunchedEffect(Unit) { viewModel.startGame() }
 
-    // Colors and animations
+    // Sauvegarde les stats dès que la partie se termine
+    LaunchedEffect(gameState.isActive) {
+        if (!gameState.isActive && gameState.score > 0) {
+            statsManager.recordGame(
+                score          = gameState.score,
+                time           = gameState.elapsedTime,
+                bonusCaught    = gameState.greensCaught,
+                hazardsDodged  = gameState.hazardsDodged
+            )
+        }
+    }
+
+    BackHandler(enabled = true) { /* bloqué */ }
+
+    // Couleur de fond selon la vitesse
     val mainColor by animateColorAsState(
         targetValue = when {
             visualState.slowMotionActive -> Color(0xFF7C3AED)
-            gameState.currentSpeed < 7f -> Color(0xFF1e3a8a)
+            gameState.currentSpeed < 7f  -> Color(0xFF1e3a8a)
             gameState.currentSpeed < 12f -> Color(0xFF4c1d95)
             gameState.currentSpeed < 18f -> Color(0xFF831843)
             gameState.currentSpeed < 25f -> Color(0xFF9a3412)
-            else -> Color(0xFF991b1b)
+            else                         -> Color(0xFF991b1b)
         },
         animationSpec = tween(1500, easing = FastOutSlowInEasing),
         label = "mainColor"
     )
 
-    val shieldAlpha by animateFloatAsState(
-        targetValue = if (gameState.hasShield) 0.7f else 0f,
-        animationSpec = tween(300),
-        label = "shieldAlpha"
-    )
-
-    // ✅ COULEUR DU JOUEUR - VÉRIFIE TIMER COMBO
+    // Couleur joueur selon power-up actif — changement de couleur uniquement, sans cercle
     val playerColor by animateColorAsState(
         targetValue = when {
-            gameState.hasShield -> Color(0xFF22C55E)                                        // 🟢 VERT avec shield
-            gameState.scoreMultiplier > 1f -> Color(0xFFfbbf24)                             // 🟡 Jaune avec multiplier
-            gameState.combo >= 8 && gameState.comboTimeRemaining > 0 -> Color(0xFFEC4899)   // 🟣 Rose combo 8+ ACTIF
-            gameState.combo >= 5 && gameState.comboTimeRemaining > 0 -> Color(0xFFa78bfa)   // 💜 Violet combo 5+ ACTIF
-            gameState.combo >= 3 && gameState.comboTimeRemaining > 0 -> Color(0xFF7DD3FC)   // 🔵 Cyan combo 3+ ACTIF
-            else -> Color(0xFF60A5FA)                                                       // 🔵 Bleu normal
+            gameState.hasShield            -> Color(0xFF6EE7B7)  // vert = shield
+            gameState.scoreMultiplier > 1f -> Color(0xFFFCD34D)  // jaune = ×2
+            else                           -> Color(0xFF60A5FA)  // bleu = normal
         },
-        animationSpec = tween(300, easing = FastOutSlowInEasing),                           // Animation rapide pour reset
+        animationSpec = tween(300, easing = FastOutSlowInEasing),
         label = "playerColor"
     )
 
-    val playerGradient = remember(playerColor) {
-        Brush.radialGradient(
-            colors = listOf(Color.White, playerColor),
-            radius = 55f
-        )
+    val playerGradient by remember(playerColor) {
+        derivedStateOf {
+            Brush.radialGradient(colors = listOf(Color.White, playerColor), radius = 55f)
+        }
     }
 
-    // ✅ GLOW SIZE ET COLOR - VÉRIFIE TIMER COMBO
-    val glowSize = when {
-        gameState.combo >= 10 && gameState.comboTimeRemaining > 0 -> 80f    // Énorme pour combo 10+ ACTIF
-        gameState.combo >= 8 && gameState.comboTimeRemaining > 0 -> 75f     // Très grand pour combo 8+ ACTIF
-        gameState.combo >= 5 && gameState.comboTimeRemaining > 0 -> 70f     // Grand pour combo 5+ ACTIF
-        gameState.combo >= 3 && gameState.comboTimeRemaining > 0 -> 65f     // Moyen pour combo 3+ ACTIF
-        gameState.scoreMultiplier > 1f -> 68f
-        else -> 58f
-    }
-
-    val glowColor by animateColorAsState(
-        targetValue = when {
-            gameState.combo >= 8 && gameState.comboTimeRemaining > 0 -> Color(0xFFEC4899)   // 🟣 Rose combo 8+ ACTIF
-            gameState.combo >= 5 && gameState.comboTimeRemaining > 0 -> Color(0xFFa78bfa)   // 💜 Violet combo 5+ ACTIF
-            gameState.combo >= 3 && gameState.comboTimeRemaining > 0 -> Color(0xFF7DD3FC)   // 🔵 Cyan combo 3+ ACTIF
-            gameState.hasShield -> Color(0xFF22C55E)                                        // 🟢 VERT avec shield
-            gameState.scoreMultiplier > 1f -> Color(0xFFfbbf24)                             // 🟡 Jaune avec multiplier
-            else -> Color(0xFF60A5FA)                                                       // 🔵 Bleu normal
-        },
-        animationSpec = tween(300, easing = FastOutSlowInEasing),
-        label = "glowColor"
-    )
-
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color(0xFF020617)
-    ) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF020617)) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .systemBarsPadding()
                 .pointerInput(gameState.isActive) {
                     detectDragGestures(
-                        onDragStart = { offset ->
-                            if (gameState.isActive) {
+                        onDragStart  = { offset ->
+                            if (gameState.isActive)
                                 viewModel.updatePlayerPosition(
-                                    offset.x.coerceIn(0f, size.width.toFloat()),
-                                    dragging = true
+                                    offset.x.coerceIn(0f, size.width.toFloat()), dragging = true
                                 )
-                            }
                         },
-                        onDrag = { change, _ ->
+                        onDrag       = { change, _ ->
                             if (gameState.isActive) {
                                 change.consume()
                                 viewModel.updatePlayerPosition(
-                                    change.position.x.coerceIn(0f, size.width.toFloat()),
-                                    dragging = true
+                                    change.position.x.coerceIn(0f, size.width.toFloat()), dragging = true
                                 )
                             }
                         },
-                        onDragEnd = {
-                            viewModel.updatePlayerPosition(gameState.playerX, dragging = false)
-                        },
-                        onDragCancel = {
-                            viewModel.updatePlayerPosition(gameState.playerX, dragging = false)
-                        }
+                        onDragEnd    = { viewModel.updatePlayerPosition(gameState.playerX, dragging = false) },
+                        onDragCancel = { viewModel.updatePlayerPosition(gameState.playerX, dragging = false) }
                     )
                 }
         ) {
-            // Game Canvas
-            key(visualState.gameFrame) {
-                Canvas(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .offset(
-                            x = visualState.screenShakeX.dp,
-                            y = visualState.screenShakeY.dp
-                        )
-                ) {
-                    // Update screen dimensions
-                    if (gameState.screenWidth == 0f || gameState.screenHeight == 0f) {
-                        viewModel.updateScreenDimensions(size.width, size.height)
-                    }
-
-                    // Draw background
-                    drawGameBackground(mainColor)
-
-                    // Draw items
-                    val hazardPath = Path()
-                    items.forEach { item ->
-                        drawGameItem(item, hazardPath)
-                    }
-
-                    // Draw particles
-                    drawParticles(particles)
-
-                    // Draw shield aura
-                    if (gameState.hasShield) {
-                        drawShieldAura(
-                            gameState.playerX,
-                            size.height * 0.85f,
-                            shieldAlpha
-                        )
-                    }
-
-                    // Draw player
-                    drawPlayer(
-                        gameState.playerX,
-                        size.height * 0.85f,
-                        playerGradient,
-                        glowColor,
-                        glowSize
-                    )
+            // Canvas — pas de key() pour éviter la lenteur
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .offset(x = visualState.screenShakeX.dp, y = visualState.screenShakeY.dp)
+            ) {
+                if (gameState.screenWidth == 0f || gameState.screenHeight == 0f) {
+                    viewModel.updateScreenDimensions(size.width, size.height)
                 }
-            }
 
-            // HUD
-            if (gameState.isActive) {
-                GameHud(
-                    gameState = gameState,
-                    shieldTimeRemaining = gameState.shieldTimeRemaining,
-                    multiplierTimeRemaining = gameState.multiplierTimeRemaining,
-                    onQuit = onQuit
+                drawGameBackground(mainColor)
+
+                val hazardPath = Path()
+                items.forEach { item -> drawGameItem(item, hazardPath) }
+
+                drawParticles(particles)
+
+                drawPlayer(
+                    playerX        = gameState.playerX,
+                    playerY        = size.height * 0.85f,
+                    playerGradient = playerGradient,
+                    glowColor      = playerColor,
+                    glowSize       = 58f
                 )
             }
 
-            // Menu
-            if (!gameState.isActive) {
-                GameMenu(
-                    gameState = gameState,
-                    onStartGame = { viewModel.startGame() },
-                    onQuit = onQuit
+            // HUD en jeu
+            if (gameState.isActive) {
+                GameHud(
+                    gameState               = gameState,
+                    shieldTimeRemaining     = gameState.shieldTimeRemaining,
+                    multiplierTimeRemaining = gameState.multiplierTimeRemaining,
+                    onQuit                  = onBackToMenu
+                )
+            }
+
+            if (!gameState.isActive && gameState.score > 0) {
+                GameOverOverlay(
+                    gameState    = gameState,
+                    onReplay     = { viewModel.startGame() },
+                    onContinue   = { viewModel.continueAfterAd() },
+                    onBackToMenu = onBackToMenu
                 )
             }
         }

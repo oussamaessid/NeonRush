@@ -6,33 +6,39 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import app.neonrush.data.model.GameItem
 import app.neonrush.data.model.ItemType
 import app.neonrush.data.model.Particle
-import kotlin.math.sin
+
+// ─── COULEURS PAR TYPE D'ITEM ────────────────────────────────────────────────
+private val BONUS_CENTER      = Color(0xFF93C5FD)  // bleu clair
+private val BONUS_EDGE        = Color(0xFF1D4ED8)  // bleu foncé
+
+private val SHIELD_CENTER     = Color(0xFF6EE7B7)  // vert menthe clair
+private val SHIELD_EDGE       = Color(0xFF047857)  // vert foncé
+private val SHIELD_ICON_COLOR = Color(0xFFD1FAE5)  // blanc verdâtre
+
+private val MULTI_CENTER      = Color(0xFFFCD34D)  // jaune vif
+private val MULTI_EDGE        = Color(0xFFB45309)  // ambre foncé
+private val MULTI_ICON_COLOR  = Color(0xFFFFFBEB)  // blanc jaunâtre
+
+private val HAZARD_CENTER     = Color(0xFFFF6B8A)  // rose-rouge
+private val HAZARD_EDGE       = Color(0xFF991B1B)  // rouge très foncé
+// ─────────────────────────────────────────────────────────────────────────────
 
 fun DrawScope.drawGameBackground(mainColor: Color) {
     drawRect(
         brush = Brush.verticalGradient(
-            colors = listOf(
-                mainColor,
-                mainColor.copy(alpha = 0.75f),
-                Color(0xFF020617)
-            ),
+            colors = listOf(mainColor, mainColor.copy(alpha = 0.75f), Color(0xFF020617)),
             startY = 0f,
-            endY = size.height
+            endY   = size.height
         ),
         size = size
     )
-
     drawCircle(
-        brush = Brush.radialGradient(
-            colors = listOf(
-                mainColor.copy(alpha = 0.2f),
-                Color.Transparent
-            ),
+        brush  = Brush.radialGradient(
+            colors = listOf(mainColor.copy(alpha = 0.2f), Color.Transparent),
             center = Offset(size.width * 0.5f, size.height * 0.25f),
             radius = size.width * 0.8f
         ),
@@ -42,180 +48,123 @@ fun DrawScope.drawGameBackground(mainColor: Color) {
 }
 
 fun DrawScope.drawGameItem(item: GameItem, hazardPath: Path) {
-    val pulse = (sin(item.pulsePhase) * 0.15f + 1f)
-
     rotate(item.rotation, pivot = Offset(item.x, item.y)) {
         when (item.type) {
-            ItemType.BONUS -> drawBonusItem(item)
-            ItemType.SHIELD -> drawShieldItem(item)
+            ItemType.BONUS      -> drawBonusItem(item)
+            ItemType.SHIELD     -> drawShieldItem(item)
             ItemType.MULTIPLIER -> drawMultiplierItem(item)
-            ItemType.HAZARD -> drawHazardItem(item, hazardPath, pulse)
+            ItemType.HAZARD     -> drawHazardItem(item, hazardPath)
         }
     }
 }
 
+// ── BONUS — carré bleu, ZERO bordure ────────────────────────────────────────
 private fun DrawScope.drawBonusItem(item: GameItem) {
     drawRect(
-        brush = Brush.radialGradient(
-            colors = listOf(Color(0xFF7DD3FC), Color(0xFF1E40AF)),
+        brush   = Brush.radialGradient(
+            colors = listOf(BONUS_CENTER, BONUS_EDGE),
             center = Offset(item.x, item.y),
             radius = item.size
         ),
         topLeft = Offset(item.x - item.size / 2, item.y - item.size / 2),
-        size = Size(item.size, item.size)
+        size    = Size(item.size, item.size)
     )
 }
 
+// ── SHIELD — cercle vert menthe, ZERO bordure ────────────────────────────────
 private fun DrawScope.drawShieldItem(item: GameItem) {
-    val radius = item.size / 2
-    // ✅ Ballon shield en VERT
+    val r = item.size / 2
     drawCircle(
-        brush = Brush.radialGradient(
-            colors = listOf(Color(0xFF4ADE80), Color(0xFF16A34A)),  // 🟢 Vert clair → Vert foncé
+        brush  = Brush.radialGradient(
+            colors = listOf(SHIELD_CENTER, SHIELD_EDGE),
             center = Offset(item.x, item.y),
-            radius = radius
+            radius = r
         ),
-        radius = radius,
+        radius = r,
         center = Offset(item.x, item.y)
     )
-    drawCircle(
-        color = Color(0xFF22C55E),  // 🟢 Bordure verte
-        radius = radius,
-        center = Offset(item.x, item.y),
-        style = Stroke(width = 3f)
-    )
-    drawShieldIcon(item.x, item.y, radius * 0.6f)
+    drawShieldIconFilled(item.x, item.y, r * 0.55f)
 }
 
+// ── MULTIPLIER — cercle jaune/ambre, ZERO bordure ───────────────────────────
 private fun DrawScope.drawMultiplierItem(item: GameItem) {
-    val radius = item.size / 2
+    val r = item.size / 2
     drawCircle(
-        brush = Brush.radialGradient(
-            colors = listOf(Color(0xFFfde047), Color(0xFF92400E)),
+        brush  = Brush.radialGradient(
+            colors = listOf(MULTI_CENTER, MULTI_EDGE),
             center = Offset(item.x, item.y),
-            radius = radius
+            radius = r
         ),
-        radius = radius,
+        radius = r,
         center = Offset(item.x, item.y)
     )
-    drawCircle(
-        color = Color(0xFFfbbf24),
-        radius = radius,
-        center = Offset(item.x, item.y),
-        style = Stroke(width = 3f)
-    )
-    drawX2Icon(item.x, item.y, radius * 0.6f)
+    drawX2IconFilled(item.x, item.y, r * 0.55f)
 }
 
-private fun DrawScope.drawHazardItem(item: GameItem, hazardPath: Path, pulse: Float) {
+// ── HAZARD — triangle rouge, ZERO bordure ────────────────────────────────────
+private fun DrawScope.drawHazardItem(item: GameItem, hazardPath: Path) {
     hazardPath.reset()
-    hazardPath.moveTo(item.x, item.y - item.size / 2)
-    hazardPath.lineTo(item.x + item.size / 2, item.y + item.size / 2)
-    hazardPath.lineTo(item.x - item.size / 2, item.y + item.size / 2)
+    hazardPath.moveTo(item.x,                  item.y - item.size / 2)
+    hazardPath.lineTo(item.x + item.size / 2,  item.y + item.size / 2)
+    hazardPath.lineTo(item.x - item.size / 2,  item.y + item.size / 2)
     hazardPath.close()
-
+    // Uniquement fill, ZERO Stroke
     drawPath(
-        hazardPath,
+        path  = hazardPath,
         brush = Brush.radialGradient(
-            colors = listOf(Color(0xFFFF6B8A), Color(0xFFDC2626)),
+            colors = listOf(HAZARD_CENTER, HAZARD_EDGE),
             center = Offset(item.x, item.y),
             radius = item.size
         )
     )
-
-    drawPath(
-        hazardPath,
-        color = Color(0xFFFF6B8A),
-        style = Stroke(width = 3.5f)
-    )
 }
 
-fun DrawScope.drawShieldIcon(cx: Float, cy: Float, s: Float) {
-    val path = Path()
-    val top = cy - s * 0.9f
-    val bot = cy + s * 0.9f
-    val left = cx - s * 0.65f
-    val right = cx + s * 0.65f
-    val mid = cy + s * 0.25f
-
-    path.moveTo(cx, top)
-    path.lineTo(right, top + s * 0.3f)
-    path.lineTo(right, mid)
-    path.lineTo(cx, bot)
-    path.lineTo(left, mid)
-    path.lineTo(left, top + s * 0.3f)
-    path.close()
-
-    // ✅ Icône shield en VERT
-    drawPath(path, color = Color(0xFF22C55E).copy(alpha = 0.5f))  // 🟢 Fond vert
-    drawPath(
-        path,
-        color = Color(0xFF4ADE80),  // 🟢 Bordure vert clair
-        style = Stroke(width = 3.5f)
-    )
+// ── Icône bouclier — fill uniquement, ZERO Stroke ───────────────────────────
+private fun DrawScope.drawShieldIconFilled(cx: Float, cy: Float, s: Float) {
+    val path = Path().apply {
+        moveTo(cx,              cy - s * 0.90f)
+        lineTo(cx + s * 0.65f, cy - s * 0.60f)
+        lineTo(cx + s * 0.65f, cy + s * 0.25f)
+        lineTo(cx,              cy + s * 0.90f)
+        lineTo(cx - s * 0.65f, cy + s * 0.25f)
+        lineTo(cx - s * 0.65f, cy - s * 0.60f)
+        close()
+    }
+    drawPath(path, color = SHIELD_ICON_COLOR.copy(alpha = 0.75f))
 }
 
-fun DrawScope.drawX2Icon(cx: Float, cy: Float, s: Float) {
-    val color = Color(0xFFfbbf24)
-    val strokeW = 3.5f
+// ── Icône x2 — drawLine uniquement (pas un contour d'objet) ─────────────────
+private fun DrawScope.drawX2IconFilled(cx: Float, cy: Float, s: Float) {
+    val c  = MULTI_ICON_COLOR
+    val sw = 4f
 
-    // X
     val xCx = cx - s * 0.42f
-    val xR = s * 0.52f
-    drawLine(
-        color = color,
-        start = Offset(xCx - xR, cy - xR),
-        end = Offset(xCx + xR, cy + xR),
-        strokeWidth = strokeW
-    )
-    drawLine(
-        color = color,
-        start = Offset(xCx + xR, cy - xR),
-        end = Offset(xCx - xR, cy + xR),
-        strokeWidth = strokeW
-    )
+    val xR  = s * 0.50f
+    drawLine(c, Offset(xCx - xR, cy - xR), Offset(xCx + xR, cy + xR), sw)
+    drawLine(c, Offset(xCx + xR, cy - xR), Offset(xCx - xR, cy + xR), sw)
 
-    // 2
-    val twoCx = cx + s * 0.45f
-    val twoW = s * 0.58f
-    val twoH = s * 0.95f
-    val tL = twoCx - twoW / 2
-    val tR = twoCx + twoW / 2
-    val tT = cy - twoH / 2
-    val tM = cy
-    val tB = cy + twoH / 2
+    val tCx = cx + s * 0.45f
+    val tW  = s * 0.55f; val tH = s * 0.90f
+    val tL  = tCx - tW / 2; val tR2 = tCx + tW / 2
+    val tT  = cy - tH / 2;  val tM  = cy;   val tB = cy + tH / 2
 
-    drawLine(color = color, start = Offset(tL, tT), end = Offset(tR, tT), strokeWidth = strokeW)
-    drawLine(color = color, start = Offset(tR, tT), end = Offset(tR, tM), strokeWidth = strokeW)
-    drawLine(color = color, start = Offset(tL, tM), end = Offset(tR, tM), strokeWidth = strokeW)
-    drawLine(color = color, start = Offset(tL, tM), end = Offset(tL, tB), strokeWidth = strokeW)
-    drawLine(color = color, start = Offset(tL, tB), end = Offset(tR, tB), strokeWidth = strokeW)
+    drawLine(c, Offset(tL,  tT), Offset(tR2, tT), sw)
+    drawLine(c, Offset(tR2, tT), Offset(tR2, tM), sw)
+    drawLine(c, Offset(tL,  tM), Offset(tR2, tM), sw)
+    drawLine(c, Offset(tL,  tM), Offset(tL,  tB), sw)
+    drawLine(c, Offset(tL,  tB), Offset(tR2, tB), sw)
 }
 
 fun DrawScope.drawParticles(particles: List<Particle>) {
     particles.forEach { p ->
         drawCircle(
-            color = p.color.copy(alpha = p.life * 0.9f),
+            color  = p.color.copy(alpha = p.life * 0.9f),
             radius = p.size * p.life,
             center = Offset(p.x, p.y)
         )
     }
 }
 
-fun DrawScope.drawShieldAura(playerX: Float, playerY: Float, shieldAlpha: Float) {
-    // ✅ Aura shield en VERT
-    drawCircle(
-        color = Color(0xFF22C55E).copy(alpha = shieldAlpha * 0.25f),  // 🟢 VERT
-        radius = 85f,
-        center = Offset(playerX, playerY)
-    )
-    drawCircle(
-        color = Color(0xFF22C55E).copy(alpha = shieldAlpha),  // 🟢 VERT
-        radius = 75f,
-        center = Offset(playerX, playerY),
-        style = Stroke(width = 5f)
-    )
-}
 
 fun DrawScope.drawPlayer(
     playerX: Float,
@@ -224,15 +173,6 @@ fun DrawScope.drawPlayer(
     glowColor: Color,
     glowSize: Float
 ) {
-    drawCircle(
-        color = glowColor.copy(alpha = 0.55f),
-        radius = glowSize,
-        center = Offset(playerX, playerY)
-    )
-
-    drawCircle(
-        brush = playerGradient,
-        radius = 52f,
-        center = Offset(playerX, playerY)
-    )
+    drawCircle(color = glowColor.copy(alpha = 0.50f), radius = glowSize, center = Offset(playerX, playerY))
+    drawCircle(brush = playerGradient,                 radius = 52f,      center = Offset(playerX, playerY))
 }

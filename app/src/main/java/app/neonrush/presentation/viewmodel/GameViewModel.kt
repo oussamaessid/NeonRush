@@ -40,7 +40,6 @@ class GameViewModel(
     private var targetX = 0f
     private var isDragging = false
 
-    // ✅ COMBO AVEC TIMER (comme shield/multiplier)
     private var comboEndTime = 0L
     private var lastComboCheck = 0
     private var comboJustBroke = false
@@ -91,6 +90,30 @@ class GameViewModel(
         if (targetX == 0f) targetX = width / 2
     }
 
+    fun continueAfterAd() {
+        val currentScore = gameState.value.score
+        repository.resetGame()
+        startTime     = System.currentTimeMillis()
+        lastSpawnTime = 0L
+        lastBonusTime = 0L
+        comboEndTime  = 0L
+
+        repository.updateGameState {
+            it.copy(
+                isActive       = true,
+                score          = currentScore,
+                currentSpeed   = 12f,
+                hasShield      = true
+            )
+        }
+        _powerUpState.value = PowerUpState(
+            hasShield    = true,
+            shieldEndTime = System.currentTimeMillis() + 5500L
+        )
+        _visualState.value = VisualState()
+
+        viewModelScope.launch { runGameLoop() }
+    }
     private suspend fun runGameLoop() {
         while (gameState.value.isActive && coroutineContext.isActive) {
             val currentTime = System.currentTimeMillis()
@@ -98,7 +121,7 @@ class GameViewModel(
             updateElapsedTime(currentTime)
             updatePlayerMovement()
             updatePowerUps(currentTime)
-            updateComboTimer(currentTime)  // ✅ NOUVEAU: Gestion du timer combo
+            updateComboTimer(currentTime)
             updateDifficulty()
             checkComboReward(currentTime)
             spawnItems(currentTime)
@@ -184,9 +207,6 @@ class GameViewModel(
         repository.updateGameState { it.copy(currentSpeed = settings.speed) }
     }
 
-    // ============================================
-    // SYSTÈME DE RÉCOMPENSE COMBO
-    // ============================================
     private fun checkComboReward(currentTime: Long) {
         val state = gameState.value
 
@@ -388,10 +408,9 @@ class GameViewModel(
         println("✅ COMBO INCREMENT: combo = $newCombo, expire dans 3s")
     }
 
-    // ✅ COMBO START à 3 avec timer de 3 secondes
     private fun handleBonus(collision: CollisionResult, item: GameItem, currentTime: Long) {
         lastBonusTime = currentTime
-        comboEndTime = currentTime + 3000  // ✅ Combo dure 3 secondes
+        comboEndTime = currentTime + 3000
 
         repository.updateGameState {
             it.copy(

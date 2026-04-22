@@ -65,7 +65,8 @@ dependencies {
 
     // Animation - ESSENTIEL pour animateFloatAsState et animateColorAsState
     implementation(libs.androidx.compose.animation)
-
+    implementation("com.google.android.gms:play-services-ads:23.2.0")
+    implementation("androidx.lifecycle:lifecycle-process:2.8.0")
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
