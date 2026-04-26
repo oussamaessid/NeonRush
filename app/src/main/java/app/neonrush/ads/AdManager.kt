@@ -23,9 +23,9 @@ object AdManager {
     }
 
     private object ProdIds {
-        const val APP_OPEN = "ca-app-pub-2498267529185476/9289947096"
-        const val BANNER   = "ca-app-pub-2498267529185476/5845526104"
-        const val REWARDED = "ca-app-pub-2498267529185476/7642869688"
+        const val APP_OPEN = "ca-app-pub-9651830078758870/5502402449"
+        const val BANNER   = "ca-app-pub-9651830078758870/4283944680"
+        const val REWARDED = "ca-app-pub-9651830078758870/1279026911"
     }
 
     private val APP_OPEN_AD_UNIT_ID = if (IS_PRODUCTION) ProdIds.APP_OPEN else TestIds.APP_OPEN

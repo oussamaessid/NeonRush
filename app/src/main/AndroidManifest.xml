@@ -14,7 +14,7 @@
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-2498267529185476~7538927908"/>
+            android:value="ca-app-pub-9651830078758870~6451462547"/>
 
         <activity
             android:name="app.neonrush.MainActivity"
