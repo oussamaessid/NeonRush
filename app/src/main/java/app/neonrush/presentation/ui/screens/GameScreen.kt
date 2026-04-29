@@ -31,24 +31,21 @@ fun GameScreen(
     val particles   by viewModel.particles.collectAsState()
     val visualState by viewModel.visualState.collectAsState()
 
-    // Démarre automatiquement à l'entrée dans l'écran
     LaunchedEffect(Unit) { viewModel.startGame() }
 
-    // Sauvegarde les stats dès que la partie se termine
     LaunchedEffect(gameState.isActive) {
         if (!gameState.isActive && gameState.score > 0) {
             statsManager.recordGame(
-                score          = gameState.score,
-                time           = gameState.elapsedTime,
-                bonusCaught    = gameState.greensCaught,
-                hazardsDodged  = gameState.hazardsDodged
+                score         = gameState.score,
+                time          = gameState.elapsedTime,
+                bonusCaught   = gameState.greensCaught,
+                hazardsDodged = gameState.hazardsDodged
             )
         }
     }
 
     BackHandler(enabled = true) { /* bloqué */ }
 
-    // Couleur de fond selon la vitesse
     val mainColor by animateColorAsState(
         targetValue = when {
             visualState.slowMotionActive -> Color(0xFF7C3AED)
@@ -62,12 +59,11 @@ fun GameScreen(
         label = "mainColor"
     )
 
-    // Couleur joueur selon power-up actif — changement de couleur uniquement, sans cercle
     val playerColor by animateColorAsState(
         targetValue = when {
-            gameState.hasShield            -> Color(0xFF6EE7B7)  // vert = shield
-            gameState.scoreMultiplier > 1f -> Color(0xFFFCD34D)  // jaune = ×2
-            else                           -> Color(0xFF60A5FA)  // bleu = normal
+            gameState.hasShield            -> Color(0xFF6EE7B7)
+            gameState.scoreMultiplier > 1f -> Color(0xFFFCD34D)
+            else                           -> Color(0xFF60A5FA)
         },
         animationSpec = tween(300, easing = FastOutSlowInEasing),
         label = "playerColor"
@@ -105,7 +101,6 @@ fun GameScreen(
                     )
                 }
         ) {
-            // Canvas — pas de key() pour éviter la lenteur
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
@@ -127,11 +122,11 @@ fun GameScreen(
                     playerY        = size.height * 0.85f,
                     playerGradient = playerGradient,
                     glowColor      = playerColor,
-                    glowSize       = 58f
+                    // ✅ FIX : glow réduit → supprime le cercle visible autour du joueur
+                    glowSize       = 46f
                 )
             }
 
-            // HUD en jeu
             if (gameState.isActive) {
                 GameHud(
                     gameState               = gameState,

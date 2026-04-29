@@ -41,8 +41,7 @@ object AdManager {
     private var appOpenAd: AppOpenAd? = null
     private var isAppOpenAdShowing = false
 
-    // ── App Open ─────────────────────────────────────────────────────────────
-    // onLoaded : callback optionnel appelé dès que la pub est prête
+
     fun loadAppOpenAd(context: Context, onLoaded: (() -> Unit)? = null) {
         val request = AdRequest.Builder().build()
         AppOpenAd.load(

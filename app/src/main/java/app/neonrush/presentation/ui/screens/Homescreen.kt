@@ -1,10 +1,11 @@
 package app.neonrush.presentation.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -14,9 +15,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
+import com.google.android.gms.ads.LoadAdError
 import app.neonrush.data.GameStats
 
 @Composable
@@ -27,6 +30,11 @@ fun HomeScreen(
     onQuit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    BackHandler(enabled = true) { onQuit() }
+
+    // ✅ true seulement quand la bannière est chargée avec succès
+    var isBannerLoaded by remember { mutableStateOf(false) }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -37,7 +45,6 @@ fun HomeScreen(
             )
             .systemBarsPadding()
     ) {
-        // ── Quit button ───────────────────────────────────────────────────────
         IconButton(
             onClick  = onQuit,
             modifier = Modifier
@@ -50,16 +57,15 @@ fun HomeScreen(
                 fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
 
-        // ── All content in a single non-scrollable Column ─────────────────────
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 60.dp)          // reserve space for banner
+                // ✅ padding bottom seulement si bannière chargée, sinon 0
+                .padding(bottom = if (isBannerLoaded) 60.dp else 0.dp)
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceEvenly  // distributes space evenly, no scroll needed
+            verticalArrangement = Arrangement.SpaceEvenly
         ) {
-            // Title
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text          = "NEON",
@@ -77,15 +83,12 @@ fun HomeScreen(
                 )
             }
 
-            // Stats (only when available)
             if (stats.totalGames > 0) {
                 StatsSection(stats)
             }
 
-            // Instructions
             InstructionsSection()
 
-            // Play button
             Button(
                 onClick   = onPlay,
                 modifier  = Modifier.fillMaxWidth().height(58.dp),
@@ -102,17 +105,30 @@ fun HomeScreen(
             }
         }
 
-        // ── AdMob Banner — pinned to bottom ──────────────────────────────────
+        // ✅ Bannière visible UNIQUEMENT si chargée — sinon invisible, pas de barre noire
         AndroidView(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .height(60.dp)
-                .background(Color(0xFF0F172A)),
-            factory  = { ctx ->
+                // ✅ hauteur 0 si pas chargée → aucun espace vide
+                .height(if (isBannerLoaded) 60.dp else 0.dp)
+                .background(
+                    if (isBannerLoaded) Color(0xFF0F172A) else Color.Transparent
+                ),
+            factory = { ctx ->
                 AdView(ctx).apply {
                     setAdSize(AdSize.BANNER)
                     adUnitId = bannerAdUnitId
+                    adListener = object : AdListener() {
+                        override fun onAdLoaded() {
+                            // ✅ Bannière chargée → afficher
+                            isBannerLoaded = true
+                        }
+                        override fun onAdFailedToLoad(error: LoadAdError) {
+                            // ✅ Échec → rester invisible, fond normal
+                            isBannerLoaded = false
+                        }
+                    }
                     loadAd(AdRequest.Builder().build())
                 }
             }
@@ -120,7 +136,6 @@ fun HomeScreen(
     }
 }
 
-// ── StatsSection — WITHOUT the StatSmall row ─────────────────────────────────
 @Composable
 private fun StatsSection(stats: GameStats) {
     Column(
@@ -139,13 +154,12 @@ private fun StatsSection(stats: GameStats) {
         )
         Spacer(modifier = Modifier.height(12.dp))
         Row(
-            modifier                = Modifier.fillMaxWidth(),
-            horizontalArrangement   = Arrangement.SpaceEvenly
+            modifier              = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             StatBig("🏆", stats.bestScore.toString(), "MEILLEUR SCORE", Color(0xFF38BDF8))
             StatBig("⏱",  "${stats.bestTime}s",       "MEILLEUR TEMPS", Color(0xFFfbbf24))
         }
-        // ← StatSmall row removed
     }
 }
 

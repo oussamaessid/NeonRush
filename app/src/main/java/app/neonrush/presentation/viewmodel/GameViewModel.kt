@@ -52,7 +52,7 @@ class GameViewModel(
         targetX = gameState.value.playerX
         lastComboCheck = 0
         comboJustBroke = false
-        comboEndTime = 0L  // ✅ Reset du timer combo
+        comboEndTime = 0L
 
         repository.updateGameState { it.copy(isActive = true, currentSpeed = 12f) }
         _powerUpState.value = PowerUpState()
@@ -66,9 +66,9 @@ class GameViewModel(
     fun stopGame() {
         repository.updateGameState {
             it.copy(
-                isActive = false,
+                isActive  = false,
                 bestScore = maxOf(it.bestScore, it.score),
-                bestTime = maxOf(it.bestTime, it.elapsedTime)
+                bestTime  = maxOf(it.bestTime, it.elapsedTime)
             )
         }
     }
@@ -82,9 +82,9 @@ class GameViewModel(
         repository.updateGameState { state ->
             val newPlayerX = if (state.playerX == 0f) width / 2 else state.playerX
             state.copy(
-                screenWidth = width,
+                screenWidth  = width,
                 screenHeight = height,
-                playerX = newPlayerX
+                playerX      = newPlayerX
             )
         }
         if (targetX == 0f) targetX = width / 2
@@ -100,20 +100,21 @@ class GameViewModel(
 
         repository.updateGameState {
             it.copy(
-                isActive       = true,
-                score          = currentScore,
-                currentSpeed   = 12f,
-                hasShield      = true
+                isActive     = true,
+                score        = currentScore,
+                currentSpeed = 12f,
+                hasShield    = true
             )
         }
         _powerUpState.value = PowerUpState(
-            hasShield    = true,
+            hasShield     = true,
             shieldEndTime = System.currentTimeMillis() + 5500L
         )
         _visualState.value = VisualState()
 
         viewModelScope.launch { runGameLoop() }
     }
+
     private suspend fun runGameLoop() {
         while (gameState.value.isActive && coroutineContext.isActive) {
             val currentTime = System.currentTimeMillis()
@@ -146,7 +147,7 @@ class GameViewModel(
         if (!isDragging) return
 
         val state = gameState.value
-        val diff = targetX - state.playerX
+        val diff  = targetX - state.playerX
 
         val newPlayerX = if (abs(diff) < 2f) {
             targetX
@@ -181,28 +182,25 @@ class GameViewModel(
         // Slow Motion
         if (powerUp.slowMotionActive && currentTime > powerUp.slowMotionEndTime) {
             _powerUpState.value = powerUp.copy(slowMotionActive = false)
-            _visualState.value = _visualState.value.copy(slowMotionActive = false)
+            _visualState.value  = _visualState.value.copy(slowMotionActive = false)
         }
     }
 
-    // ✅ NOUVEAU: Gestion du timer de combo (comme shield/multiplier)
     private fun updateComboTimer(currentTime: Long) {
         val state = gameState.value
 
-        // Si combo actif ET timer expiré → reset à 0
-        if (state.combo >= 3 && currentTime > comboEndTime) {
+        if (state.combo >= 1 && comboEndTime > 0 && currentTime > comboEndTime) {
+            // ✅ Combo expiré → reset à 0
             repository.updateGameState { it.copy(combo = 0, comboTimeRemaining = 0) }
-            println("⏱️ COMBO EXPIRED: combo reset à 0")
-        }
-        // Si combo actif → afficher le temps restant
-        else if (state.combo >= 3) {
+            comboEndTime = 0L
+        } else if (state.combo >= 3 && comboEndTime > 0) {
             val remaining = ((comboEndTime - currentTime) / 1000).toInt() + 1
             repository.updateGameState { it.copy(comboTimeRemaining = remaining) }
         }
     }
 
     private fun updateDifficulty() {
-        val state = gameState.value
+        val state    = gameState.value
         val settings = difficultyUseCase.execute(state.elapsedTime, state.score)
         repository.updateGameState { it.copy(currentSpeed = settings.speed) }
     }
@@ -210,24 +208,20 @@ class GameViewModel(
     private fun checkComboReward(currentTime: Long) {
         val state = gameState.value
 
-        // Vérifier si le combo vient de se casser (était >= 5, maintenant < 3)
-        if (lastComboCheck >= 5 && state.combo < 3) {
-            // Vérifier qu'on n'a pas déjà spawné et qu'assez de temps s'est écoulé
+        if (lastComboCheck >= 5 && state.combo < 1) {
             if (!comboJustBroke && currentTime - lastBonusTime > 1500 && state.screenWidth > 0) {
-                // Calculer le nombre de ballons en fonction du combo précédent
                 val balloonCount = when {
-                    lastComboCheck >= 15 -> 3  // Combo 15+ = 3 ballons
-                    lastComboCheck >= 10 -> 2  // Combo 10+ = 2 ballons
-                    else -> 1                   // Combo 5+ = 1 ballon
+                    lastComboCheck >= 15 -> 3
+                    lastComboCheck >= 10 -> 2
+                    else                 -> 1
                 }
 
-                // Spawner plusieurs ballons bleus (SHIELD)
                 repeat(balloonCount) { index ->
                     val offsetRange = 250f
                     val offset = when (index) {
-                        0 -> 0f              // Centre
-                        1 -> -offsetRange    // Gauche
-                        else -> offsetRange  // Droite
+                        0    -> 0f
+                        1    -> -offsetRange
+                        else -> offsetRange
                     }
 
                     val balloonX = (state.playerX + offset)
@@ -235,22 +229,21 @@ class GameViewModel(
 
                     repository.addItem(
                         GameItem(
-                            x = balloonX,
-                            y = -60f - (index * 80f), // Décalage vertical
-                            size = 72f,
-                            type = ItemType.SHIELD,
-                            speed = state.currentSpeed * 0.65f
+                            x     = balloonX,
+                            y     = -60f - (index * 80f),
+                            size  = 72f,
+                            type  = ItemType.SHIELD,
+                            // ✅ speed toujours positive → descend vers le bas
+                            speed = state.currentSpeed.coerceAtLeast(4f) * 0.65f
                         )
                     )
                 }
 
                 comboJustBroke = true
-                println("🎁 COMBO REWARD! Combo était $lastComboCheck → $balloonCount ballon(s)")
             }
         }
 
-        // Réinitialiser le flag quand le combo recommence
-        if (state.combo >= 3) {
+        if (state.combo >= 1) {
             comboJustBroke = false
         }
 
@@ -258,21 +251,21 @@ class GameViewModel(
     }
 
     private fun spawnItems(currentTime: Long) {
-        val state = gameState.value
+        val state           = gameState.value
         val difficultyLevel = (state.elapsedTime / 10f) + (state.score / 40f)
-        val settings = difficultyUseCase.execute(state.elapsedTime, state.score)
+        val settings        = difficultyUseCase.execute(state.elapsedTime, state.score)
 
         if (items.value.size >= settings.maxItems) return
         if (currentTime - lastSpawnTime <= settings.spawnInterval) return
 
         val newItems = spawnItemUseCase.execute(
-            screenWidth = state.screenWidth,
-            playerX = state.playerX,
-            currentSpeed = state.currentSpeed,
-            elapsedTime = state.elapsedTime,
-            difficultyLevel = difficultyLevel,
-            hasShield = _powerUpState.value.hasShield,
-            scoreMultiplier = _powerUpState.value.scoreMultiplier,
+            screenWidth      = state.screenWidth,
+            playerX          = state.playerX,
+            currentSpeed     = state.currentSpeed,
+            elapsedTime      = state.elapsedTime,
+            difficultyLevel  = difficultyLevel,
+            hasShield        = _powerUpState.value.hasShield,
+            scoreMultiplier  = _powerUpState.value.scoreMultiplier,
             slowMotionActive = _powerUpState.value.slowMotionActive
         )
 
@@ -281,45 +274,40 @@ class GameViewModel(
     }
 
     private suspend fun updateItems(currentTime: Long) {
-        val state = gameState.value
+        val state   = gameState.value
         val powerUp = _powerUpState.value
         val playerY = state.screenHeight * 0.85f
 
         val itemsToRemove = mutableListOf<GameItem>()
 
         items.value.forEach { item ->
-            // Update position
-            val speedMod = if (powerUp.slowMotionActive) 0.4f else 1.0f
+            val speedMod    = if (powerUp.slowMotionActive) 0.4f else 1.0f
             val updatedItem = item.copy(
-                y = item.y + item.speed * speedMod,
-                rotation = item.rotation + item.rotationSpeed,
+                y          = item.y + item.speed * speedMod,
+                rotation   = item.rotation + item.rotationSpeed,
                 pulsePhase = item.pulsePhase + 0.08f
             )
             repository.updateItem(item.id) { updatedItem }
 
-            // Check collision
             val collision = collisionUseCase.checkCollision(
-                item = updatedItem,
-                playerX = state.playerX,
-                playerY = playerY,
-                hasShield = powerUp.hasShield,
+                item            = updatedItem,
+                playerX         = state.playerX,
+                playerY         = playerY,
+                hasShield       = powerUp.hasShield,
                 scoreMultiplier = powerUp.scoreMultiplier,
-                combo = state.combo,
-                elapsedTime = state.elapsedTime,
-                currentTime = currentTime,
-                lastBonusTime = lastBonusTime
+                combo           = state.combo,
+                elapsedTime     = state.elapsedTime,
+                currentTime     = currentTime,
+                lastBonusTime   = lastBonusTime
             )
 
             if (collision.hit) {
                 handleCollision(collision, updatedItem, currentTime)
                 itemsToRemove.add(updatedItem)
             } else {
-                // Near miss check
                 if (collisionUseCase.checkNearMiss(updatedItem, state.playerX, playerY, state.screenHeight)) {
                     handleNearMiss()
                 }
-
-                // Remove if off screen
                 if (updatedItem.y > state.screenHeight + 100) {
                     if (updatedItem.type == ItemType.HAZARD) {
                         repository.updateGameState { it.copy(hazardsDodged = it.hazardsDodged + 1) }
@@ -338,18 +326,18 @@ class GameViewModel(
         currentTime: Long
     ) {
         when {
-            collision.gameOver -> handleGameOver(item, currentTime)
-            collision.shieldBlocked -> handleShieldBlock(item)
-            collision.activateShield -> activateShield(item, currentTime)
+            collision.gameOver           -> handleGameOver(item, currentTime)
+            collision.shieldBlocked      -> handleShieldBlock(item)
+            collision.activateShield     -> activateShield(item, currentTime)
             collision.activateMultiplier -> activateMultiplier(item, currentTime)
-            collision.comboIncrement -> handleBonusWithCombo(collision, item, currentTime)
-            else -> handleBonus(collision, item, currentTime)
+            collision.comboIncrement     -> handleBonusWithCombo(collision, item, currentTime)
+            else                         -> handleBonus(collision, item, currentTime)
         }
     }
 
     private suspend fun handleGameOver(item: GameItem, currentTime: Long) {
         _powerUpState.value = _powerUpState.value.copy(
-            slowMotionActive = true,
+            slowMotionActive  = true,
             slowMotionEndTime = currentTime + 800
         )
         _visualState.value = _visualState.value.copy(slowMotionActive = true)
@@ -368,7 +356,7 @@ class GameViewModel(
 
     private fun activateShield(item: GameItem, currentTime: Long) {
         _powerUpState.value = _powerUpState.value.copy(
-            hasShield = true,
+            hasShield     = true,
             shieldEndTime = currentTime + 5500
         )
         repository.updateGameState { it.copy(hasShield = true) }
@@ -377,24 +365,30 @@ class GameViewModel(
 
     private fun activateMultiplier(item: GameItem, currentTime: Long) {
         _powerUpState.value = _powerUpState.value.copy(
-            scoreMultiplier = 2f,
+            scoreMultiplier   = 2f,
             multiplierEndTime = currentTime + 6500
         )
         repository.updateGameState { it.copy(scoreMultiplier = 2f) }
         addParticles(item.x, item.y, Color(0xFFfbbf24), 16)
     }
 
-    // ✅ COMBO INCREMENT avec timer de 3 secondes
+    // ✅ FIX PRINCIPAL : timer fixé UNE SEULE FOIS quand combo démarre (combo == 0)
+    // Si combo déjà actif → on n'y touche pas, le timer continue sa course
     private fun handleBonusWithCombo(collision: CollisionResult, item: GameItem, currentTime: Long) {
-        val newCombo = gameState.value.combo + 1
+        val currentCombo = gameState.value.combo
+        val newCombo     = currentCombo + 1
+
+        // ✅ Ne remet le timer à 3s QUE si le combo vient de commencer
+        if (currentCombo == 0) {
+            comboEndTime = currentTime + 3000
+        }
         lastBonusTime = currentTime
-        comboEndTime = currentTime + 3000  // ✅ Combo dure 3 secondes
 
         repository.updateGameState {
             it.copy(
-                score = it.score + collision.points,
+                score        = it.score + collision.points,
                 greensCaught = it.greensCaught + 1,
-                combo = newCombo
+                combo        = newCombo
             )
         }
 
@@ -404,33 +398,33 @@ class GameViewModel(
         if (newCombo > 5) {
             addParticles(item.x, item.y, Color(0xFFa78bfa), 6)
         }
-
-        println("✅ COMBO INCREMENT: combo = $newCombo, expire dans 3s")
     }
 
+    // ✅ FIX PRINCIPAL : même logique — timer fixé une seule fois au démarrage
     private fun handleBonus(collision: CollisionResult, item: GameItem, currentTime: Long) {
+        // ✅ Ne remet le timer QUE si combo était à 0
+        if (gameState.value.combo == 0) {
+            comboEndTime = currentTime + 3000
+        }
         lastBonusTime = currentTime
-        comboEndTime = currentTime + 3000
 
         repository.updateGameState {
             it.copy(
-                score = it.score + collision.points,
+                score        = it.score + collision.points,
                 greensCaught = it.greensCaught + 1,
-                combo = 3  // ← COMMENCE À 3
+                combo        = 1
             )
         }
         addParticles(item.x, item.y, Color(0xFF38BDF8), 10)
-
-        println("🔄 COMBO START: combo = 3, expire dans 3s")
     }
 
     private fun handleNearMiss() {
         repository.updateGameState { state ->
-            val newCount = state.nearMissCount + 1
+            val newCount    = state.nearMissCount + 1
             val bonusPoints = if (newCount % 3 == 0) 1 else 0
             state.copy(
                 nearMissCount = newCount,
-                score = state.score + bonusPoints
+                score         = state.score + bonusPoints
             )
         }
     }
@@ -440,8 +434,8 @@ class GameViewModel(
             particles
                 .map { p ->
                     p.copy(
-                        x = p.x + p.vx,
-                        y = p.y + p.vy,
+                        x    = p.x + p.vx,
+                        y    = p.y + p.vy,
                         life = p.life - 0.04f
                     )
                 }

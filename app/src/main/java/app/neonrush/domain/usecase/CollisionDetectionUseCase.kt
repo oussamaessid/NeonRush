@@ -41,7 +41,7 @@ class CollisionDetectionUseCase {
 
         return when (item.type) {
             ItemType.BONUS -> handleBonusCollision(
-                scoreMultiplier, combo, elapsedTime, currentTime, lastBonusTime
+                scoreMultiplier, combo, elapsedTime
             )
 
             ItemType.SHIELD -> CollisionResult(
@@ -65,27 +65,20 @@ class CollisionDetectionUseCase {
     private fun handleBonusCollision(
         scoreMultiplier: Float,
         combo: Int,
-        elapsedTime: Long,
-        currentTime: Long,
-        lastBonusTime: Long
+        elapsedTime: Long
     ): CollisionResult {
         val timeBonus = (elapsedTime / 10).toInt()
         val comboBonus = if (combo > 3) combo / 2 else 0
         val basePoints = (1 + timeBonus + comboBonus)
         val points = (basePoints * scoreMultiplier).toInt()
 
-        // ← FIX CRITIQUE: Vérifier si moins de 1.5 secondes depuis le dernier bonus
-        val timeSinceLastBonus = currentTime - lastBonusTime
-        val shouldIncrementCombo = timeSinceLastBonus < 1500
-
-        println("🔍 COMBO CHECK: temps depuis dernier bonus = ${timeSinceLastBonus}ms, shouldIncrement = $shouldIncrementCombo")
-
+        // ✅ FIX : toujours incrémenter — le ViewModel gère l'expiration du combo
         return CollisionResult(
             hit = true,
             itemType = ItemType.BONUS,
             shouldRemove = true,
             points = points,
-            comboIncrement = shouldIncrementCombo
+            comboIncrement = true
         )
     }
 

@@ -5,7 +5,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import app.neonrush.data.model.GameItem
 import app.neonrush.data.model.ItemType
@@ -71,7 +74,7 @@ private fun DrawScope.drawBonusItem(item: GameItem) {
     )
 }
 
-// ── SHIELD — cercle vert menthe, ZERO bordure ────────────────────────────────
+// ── SHIELD — cercle vert menthe + icône bouclier OUVERTE pointant vers le BAS
 private fun DrawScope.drawShieldItem(item: GameItem) {
     val r = item.size / 2
     drawCircle(
@@ -83,7 +86,8 @@ private fun DrawScope.drawShieldItem(item: GameItem) {
         radius = r,
         center = Offset(item.x, item.y)
     )
-    drawShieldIconFilled(item.x, item.y, r * 0.55f)
+    // FIX : icône ouverte (outline), pointe clairement en BAS
+    drawShieldIconOpen(item.x, item.y, r * 0.58f)
 }
 
 // ── MULTIPLIER — cercle jaune/ambre, ZERO bordure ───────────────────────────
@@ -108,7 +112,6 @@ private fun DrawScope.drawHazardItem(item: GameItem, hazardPath: Path) {
     hazardPath.lineTo(item.x + item.size / 2,  item.y + item.size / 2)
     hazardPath.lineTo(item.x - item.size / 2,  item.y + item.size / 2)
     hazardPath.close()
-    // Uniquement fill, ZERO Stroke
     drawPath(
         path  = hazardPath,
         brush = Brush.radialGradient(
@@ -119,21 +122,45 @@ private fun DrawScope.drawHazardItem(item: GameItem, hazardPath: Path) {
     )
 }
 
-// ── Icône bouclier — fill uniquement, ZERO Stroke ───────────────────────────
-private fun DrawScope.drawShieldIconFilled(cx: Float, cy: Float, s: Float) {
+// ── FIX : Icône bouclier OUVERTE (outline), pointe vers le BAS ──────────────
+//   Forme héraldique classique :
+//     - Haut plat avec coins arrondis via cubicTo
+//     - Côtés qui descendent et convergent vers la pointe du bas
+private fun DrawScope.drawShieldIconOpen(cx: Float, cy: Float, s: Float) {
+    val strokeStyle = Stroke(
+        width = 5f,
+        cap   = StrokeCap.Round,
+        join  = StrokeJoin.Round
+    )
+
     val path = Path().apply {
-        moveTo(cx,              cy - s * 0.90f)
-        lineTo(cx + s * 0.65f, cy - s * 0.60f)
-        lineTo(cx + s * 0.65f, cy + s * 0.25f)
-        lineTo(cx,              cy + s * 0.90f)
-        lineTo(cx - s * 0.65f, cy + s * 0.25f)
-        lineTo(cx - s * 0.65f, cy - s * 0.60f)
+        // Coin supérieur gauche
+        moveTo(cx - s * 0.65f, cy - s * 0.55f)
+
+        // Arc courbe en haut (dome)
+        cubicTo(
+            cx - s * 0.65f, cy - s * 1.00f,   // contrôle gauche
+            cx + s * 0.65f, cy - s * 1.00f,   // contrôle droit
+            cx + s * 0.65f, cy - s * 0.55f    // coin supérieur droit
+        )
+
+        // Descente côté droit
+        lineTo(cx + s * 0.65f, cy + s * 0.20f)
+
+        // Pointe vers le BAS (vertex inférieur)
+        lineTo(cx,             cy + s * 0.90f)
+
+        // Remontée côté gauche
+        lineTo(cx - s * 0.65f, cy + s * 0.20f)
+
+        // Fermeture vers le coin supérieur gauche
         close()
     }
-    drawPath(path, color = SHIELD_ICON_COLOR.copy(alpha = 0.75f))
+
+    drawPath(path, color = SHIELD_ICON_COLOR.copy(alpha = 0.92f), style = strokeStyle)
 }
 
-// ── Icône x2 — drawLine uniquement (pas un contour d'objet) ─────────────────
+// ── Icône x2 — drawLine uniquement ──────────────────────────────────────────
 private fun DrawScope.drawX2IconFilled(cx: Float, cy: Float, s: Float) {
     val c  = MULTI_ICON_COLOR
     val sw = 4f
@@ -164,7 +191,6 @@ fun DrawScope.drawParticles(particles: List<Particle>) {
         )
     }
 }
-
 
 fun DrawScope.drawPlayer(
     playerX: Float,

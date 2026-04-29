@@ -22,29 +22,29 @@ class SpawnItemUseCase {
 
         // Zone de sécurité rotative
         val safeZoneIndex = ((System.currentTimeMillis() / 3000) % 5).toInt()
-        val zoneWidth = screenWidth / 5f
+        val zoneWidth     = screenWidth / 5f
         val safeZoneStart = safeZoneIndex * zoneWidth
-        val safeZoneEnd = safeZoneStart + zoneWidth
+        val safeZoneEnd   = safeZoneStart + zoneWidth
 
-        // ============================================
-        // RATIO DE HAZARDS RÉDUIT = PLUS DE CARRÉS BLEUS
-        // ============================================
+        // ============================================================
+        // RATIO DE HAZARDS RÉDUIT — encore plus de carrés bleus
+        // ============================================================
         val hazardRatio = when {
-            elapsedTime < 8  -> 0.30f   // ← RÉDUIT de 0.40f à 0.30f
-            elapsedTime < 15 -> 0.35f   // ← RÉDUIT de 0.45f à 0.35f
-            difficultyLevel < 7f  -> 0.40f   // ← RÉDUIT de 0.50f à 0.40f
-            difficultyLevel < 12f -> 0.45f   // ← RÉDUIT de 0.58f à 0.45f
-            difficultyLevel < 18f -> 0.50f   // ← RÉDUIT de 0.65f à 0.50f
-            difficultyLevel < 25f -> 0.55f   // ← RÉDUIT de 0.70f à 0.55f
-            else -> 0.60f                     // ← RÉDUIT de 0.74f à 0.60f
+            elapsedTime < 8  -> 0.20f
+            elapsedTime < 15 -> 0.25f
+            difficultyLevel < 7f  -> 0.30f
+            difficultyLevel < 12f -> 0.35f
+            difficultyLevel < 18f -> 0.40f
+            difficultyLevel < 25f -> 0.45f
+            else -> 0.50f
         }.let { base ->
-            if (hasShield || scoreMultiplier > 1f) base + 0.05f  // ← RÉDUIT de 0.06f
+            if (hasShield || scoreMultiplier > 1f) base + 0.04f
             else base
         }
 
         val items = mutableListOf<GameItem>()
 
-        // Power-ups spawn
+        // ── Power-ups ──────────────────────────────────────────────
         val powerUpChance = Random.nextFloat()
         if (powerUpChance < 0.025f && !hasShield) {
             items.add(createSmartItem(
@@ -60,39 +60,66 @@ class SpawnItemUseCase {
             ))
         }
 
-        // ============================================
-        // BURST COUNT AUGMENTÉ = PLUS D'ITEMS SPAWN
-        // ============================================
+        // ── Burst count ────────────────────────────────────────────
         val burstCount = when {
-            difficultyLevel < 4f  -> 2           // ← AUGMENTÉ de 1 à 2
-            difficultyLevel < 9f  -> if (Random.nextFloat() < 0.40f) 3 else 2  // ← AUGMENTÉ
+            difficultyLevel < 4f  -> 2
+            difficultyLevel < 9f  -> if (Random.nextFloat() < 0.40f) 3 else 2
             difficultyLevel < 16f -> when {
-                Random.nextFloat() < 0.30f -> 4  // ← AUGMENTÉ
-                Random.nextFloat() < 0.55f -> 3  // ← AUGMENTÉ
-                else -> 2                         // ← AUGMENTÉ
+                Random.nextFloat() < 0.30f -> 4
+                Random.nextFloat() < 0.55f -> 3
+                else -> 2
             }
             else -> when {
-                Random.nextFloat() < 0.25f -> 5  // ← AUGMENTÉ
-                Random.nextFloat() < 0.50f -> 4  // ← AUGMENTÉ
-                Random.nextFloat() < 0.70f -> 3  // ← AUGMENTÉ
-                else -> 2                         // ← AUGMENTÉ
+                Random.nextFloat() < 0.25f -> 5
+                Random.nextFloat() < 0.50f -> 4
+                Random.nextFloat() < 0.70f -> 3
+                else -> 2
             }
         }
+
+        // ── Spawn du burst avec règle anti-adjacence ───────────────
+        // FIX : on ne place jamais deux items du même type
+        // à moins de MIN_SAME_TYPE_DIST px l'un de l'autre.
+        val MIN_SAME_TYPE_DIST = 170f
+        val spawnedThisBurst = mutableListOf<GameItem>()
 
         repeat(burstCount) {
-            val itemType = if (Random.nextFloat() < hazardRatio) {
-                ItemType.HAZARD
-            } else {
-                ItemType.BONUS
+            var candidate: GameItem? = null
+
+            // On essaie jusqu'à 6 fois de trouver une position valide
+            for (attempt in 0 until 6) {
+                val wantType = if (Random.nextFloat() < hazardRatio) ItemType.HAZARD else ItemType.BONUS
+                val tentative = createSmartItem(
+                    screenWidth, playerX, safeZoneStart, safeZoneEnd,
+                    safeZoneIndex, zoneWidth, currentSpeed, slowMotionActive,
+                    wantType
+                )
+
+                // Vérifie que le type n'est pas déjà trop proche d'un item identique
+                val tooClose = spawnedThisBurst.any { existing ->
+                    existing.type == tentative.type &&
+                            abs(existing.x - tentative.x) < MIN_SAME_TYPE_DIST
+                }
+
+                if (!tooClose) {
+                    candidate = tentative
+                    break
+                }
+
+                // Dernier essai : force BONUS pour garder de la fluidité
+                if (attempt == 5) {
+                    candidate = createSmartItem(
+                        screenWidth, playerX, safeZoneStart, safeZoneEnd,
+                        safeZoneIndex, zoneWidth, currentSpeed, slowMotionActive,
+                        ItemType.BONUS
+                    )
+                }
             }
 
-            items.add(createSmartItem(
-                screenWidth, playerX, safeZoneStart, safeZoneEnd,
-                safeZoneIndex, zoneWidth, currentSpeed, slowMotionActive,
-                itemType
-            ))
+            candidate?.let { spawnedThisBurst.add(it) }
         }
 
+        items.addAll(spawnedThisBurst)
         return items
     }
 
@@ -107,10 +134,11 @@ class SpawnItemUseCase {
         slowMotionActive: Boolean,
         forceType: ItemType? = null
     ): GameItem {
-        var itemX = Random.nextFloat() * screenWidth
+        var itemX    = Random.nextFloat() * screenWidth
         var itemType = forceType ?: ItemType.BONUS
 
         if (itemType == ItemType.HAZARD) {
+            // Déplace hors de la safe zone
             if (itemX >= safeZoneStart && itemX <= safeZoneEnd) {
                 if (Random.nextFloat() < 0.75f) {
                     val otherZones = listOf(0, 1, 2, 3, 4).filter { it != safeZoneIndex }
@@ -121,12 +149,13 @@ class SpawnItemUseCase {
                 }
             }
 
+            // Évite de coller au joueur
             val distToPlayer = abs(itemX - playerX)
             if (distToPlayer < 120f && Random.nextFloat() < 0.6f) {
-                if (playerX < screenWidth / 2) {
-                    itemX = (playerX + 150f).coerceAtMost(screenWidth - 50f)
+                itemX = if (playerX < screenWidth / 2) {
+                    (playerX + 150f).coerceAtMost(screenWidth - 50f)
                 } else {
-                    itemX = (playerX - 150f).coerceAtLeast(50f)
+                    (playerX - 150f).coerceAtLeast(50f)
                 }
             }
         }
@@ -141,10 +170,10 @@ class SpawnItemUseCase {
         val speedVariation = if (slowMotionActive) 0.5f else 1.0f
 
         return GameItem(
-            x = itemX,
-            y = -60f,
-            size = itemSize,
-            type = itemType,
+            x     = itemX,
+            y     = -60f,
+            size  = itemSize,
+            type  = itemType,
             speed = (currentSpeed + Random.nextFloat() * 1.8f) * speedVariation
         )
     }
