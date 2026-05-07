@@ -105,27 +105,20 @@ fun HomeScreen(
             }
         }
 
-        // ✅ Bannière visible UNIQUEMENT si chargée — sinon invisible, pas de barre noire
         AndroidView(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                // ✅ hauteur 0 si pas chargée → aucun espace vide
-                .height(if (isBannerLoaded) 60.dp else 0.dp)
-                .background(
-                    if (isBannerLoaded) Color(0xFF0F172A) else Color.Transparent
-                ),
+                .height(if (isBannerLoaded) 60.dp else 0.dp),
             factory = { ctx ->
                 AdView(ctx).apply {
                     setAdSize(AdSize.BANNER)
                     adUnitId = bannerAdUnitId
                     adListener = object : AdListener() {
                         override fun onAdLoaded() {
-                            // ✅ Bannière chargée → afficher
                             isBannerLoaded = true
                         }
                         override fun onAdFailedToLoad(error: LoadAdError) {
-                            // ✅ Échec → rester invisible, fond normal
                             isBannerLoaded = false
                         }
                     }
@@ -157,6 +150,7 @@ private fun StatsSection(stats: GameStats) {
             modifier              = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
+            StatBig("🏆", stats.bestScore.toString(), "MEILLEUR SCORE", Color(0xFF38BDF8))
             StatBig("🏆", stats.bestScore.toString(), "MEILLEUR SCORE", Color(0xFF38BDF8))
             StatBig("⏱",  "${stats.bestTime}s",       "MEILLEUR TEMPS", Color(0xFFfbbf24))
         }
