@@ -3,7 +3,6 @@ package app.neonrush
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -53,7 +52,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setupFullscreen()
-        blockBackButton()
 
         statsManager = StatsManager(applicationContext)
 
@@ -138,9 +136,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun blockBackButton() {
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() { /* bloqué */ }
-        })
-    }
 }

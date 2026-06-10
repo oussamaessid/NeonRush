@@ -21,9 +21,7 @@ fun BannerAdView(
                 adUnitId = AdManager.getBannerAdUnitId()
                 loadAd(AdRequest.Builder().build())
             }
-        },
-        update = { adView ->
-            adView.loadAd(AdRequest.Builder().build())
         }
+        // Pas de bloc update : recharger à chaque recomposition génère du trafic invalide
     )
 }

@@ -15,6 +15,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
@@ -32,8 +35,8 @@ fun HomeScreen(
 ) {
     BackHandler(enabled = true) { onQuit() }
 
-    // ✅ true seulement quand la bannière est chargée avec succès
     var isBannerLoaded by remember { mutableStateOf(false) }
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     Box(
         modifier = modifier
@@ -115,14 +118,21 @@ fun HomeScreen(
                     setAdSize(AdSize.BANNER)
                     adUnitId = bannerAdUnitId
                     adListener = object : AdListener() {
-                        override fun onAdLoaded() {
-                            isBannerLoaded = true
-                        }
-                        override fun onAdFailedToLoad(error: LoadAdError) {
-                            isBannerLoaded = false
-                        }
+                        override fun onAdLoaded() { isBannerLoaded = true }
+                        override fun onAdFailedToLoad(error: LoadAdError) { isBannerLoaded = false }
                     }
                     loadAd(AdRequest.Builder().build())
+
+                    // Gestion du cycle de vie : pause/resume/destroy obligatoires
+                    val observer = LifecycleEventObserver { _, event ->
+                        when (event) {
+                            Lifecycle.Event.ON_RESUME  -> resume()
+                            Lifecycle.Event.ON_PAUSE   -> pause()
+                            Lifecycle.Event.ON_DESTROY -> destroy()
+                            else -> Unit
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
                 }
             }
         )

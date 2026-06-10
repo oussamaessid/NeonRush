@@ -3,6 +3,7 @@ package app.neonrush.ads
 import android.app.Activity
 import android.content.Context
 import android.util.Log
+import com.example.neonrush.BuildConfig
 import com.google.android.gms.ads.*
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.google.android.gms.ads.rewarded.RewardedAd
@@ -10,11 +11,9 @@ import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 
 object AdManager {
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // 🔧 CHANGE ICI POUR PASSER EN MODE TEST
-    // ══════════════════════════════════════════════════════════════════════════
-    private const val IS_PRODUCTION = false  // ← false = test  |  true = prod
-    // ══════════════════════════════════════════════════════════════════════════
+    // Mode production automatique : release = prod, debug = test
+    // Ne jamais forcer IS_PRODUCTION = true manuellement pour tester !
+    private val IS_PRODUCTION = !BuildConfig.DEBUG
 
     private object TestIds {
         const val APP_OPEN = "ca-app-pub-3940256099942544/9257395921"
@@ -34,8 +33,12 @@ object AdManager {
 
     private const val TAG = "AdManager"
 
+    // Délai minimum entre deux App Open Ads : 3 minutes (180 000 ms)
+    private const val APP_OPEN_AD_MIN_INTERVAL_MS = 3 * 60 * 1000L
+    private var lastAppOpenAdShownAt = 0L
+
     init {
-        Log.d(TAG, if (IS_PRODUCTION) "🟢 MODE PRODUCTION" else "🟡 MODE TEST")
+        Log.d(TAG, if (IS_PRODUCTION) "MODE PRODUCTION" else "MODE TEST")
     }
 
     private var appOpenAd: AppOpenAd? = null
@@ -69,6 +72,14 @@ object AdManager {
             return
         }
 
+        // Respecte le délai minimum pour éviter les impressions excessives
+        val now = System.currentTimeMillis()
+        if (now - lastAppOpenAdShownAt < APP_OPEN_AD_MIN_INTERVAL_MS) {
+            Log.d(TAG, "App open ad skipped: cooldown not elapsed")
+            onComplete()
+            return
+        }
+
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
                 appOpenAd = null
@@ -83,6 +94,7 @@ object AdManager {
             }
             override fun onAdShowedFullScreenContent() {
                 isAppOpenAdShowing = true
+                lastAppOpenAdShownAt = System.currentTimeMillis()
             }
         }
         ad.show(activity)
