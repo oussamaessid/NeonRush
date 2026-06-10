@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.neonrush.data.model.GameState
+import app.neonrush.ui.theme.rememberAdaptiveScale
 
 @Composable
 fun GameMenu(
@@ -21,6 +22,7 @@ fun GameMenu(
     onQuit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val scale = rememberAdaptiveScale()
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -35,17 +37,17 @@ fun GameMenu(
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(
-                modifier = Modifier.padding(32.dp),
+                modifier = Modifier.padding((32 * scale).dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     IconButton(
                         onClick = onQuit,
                         modifier = Modifier
-                            .size(44.dp)
+                            .size((44 * scale).dp)
                             .background(color = Color.White.copy(alpha = 0.08f), shape = RoundedCornerShape(10.dp))
                     ) {
-                        Text(text = "✕", color = Color.White.copy(alpha = 0.5f), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        Text(text = "✕", color = Color.White.copy(alpha = 0.5f), fontSize = (22 * scale).sp, fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -57,14 +59,14 @@ fun GameMenu(
 
                 Button(
                     onClick = onStartGame,
-                    modifier = Modifier.padding(top = 24.dp).height(58.dp).fillMaxWidth(),
+                    modifier = Modifier.padding(top = (24 * scale).dp).height((58 * scale).dp).fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF38BDF8)),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Text(
                         text = if (gameState.score == 0) "JOUER" else "REJOUER",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 19.sp,
+                        fontSize = (19 * scale).sp,
                         color = Color.White
                     )
                 }
@@ -75,10 +77,9 @@ fun GameMenu(
 
 @Composable
 private fun MainMenuContent() {
-    Text(text = "NEON RUSH", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.ExtraBold)
+    val scale = rememberAdaptiveScale()
+    Text(text = "NEON RUSH", color = Color.White, fontSize = (34 * scale).sp, fontWeight = FontWeight.ExtraBold)
     Spacer(modifier = Modifier.height(20.dp))
-
-    // ✅ Ballon violet (anciennement vert)
     InstructionItem("🟦", "Carrés bleus = Points")
     InstructionItem("🔺", "Triangles rouges = Danger mortel")
     InstructionItem("🟢", "Ballon vert = Protection (5s)")
@@ -88,7 +89,8 @@ private fun MainMenuContent() {
 
 @Composable
 private fun GameOverContent(gameState: GameState) {
-    Text(text = "GAME OVER", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.ExtraBold)
+    val scale = rememberAdaptiveScale()
+    Text(text = "GAME OVER", color = Color.White, fontSize = (34 * scale).sp, fontWeight = FontWeight.ExtraBold)
     Spacer(modifier = Modifier.height(24.dp))
 
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -106,43 +108,47 @@ private fun GameOverContent(gameState: GameState) {
 
 @Composable
 private fun FinalTimeDisplay(finalTime: Long, bestTime: Long) {
+    val scale = rememberAdaptiveScale()
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = "TEMPS", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        Text(text = "${finalTime}s", color = Color(0xFFfbbf24), fontSize = 30.sp, fontWeight = FontWeight.Black)
+        Text(text = "TEMPS", color = Color.White.copy(alpha = 0.5f), fontSize = (12 * scale).sp, fontWeight = FontWeight.Bold)
+        Text(text = "${finalTime}s", color = Color(0xFFfbbf24), fontSize = (30 * scale).sp, fontWeight = FontWeight.Black)
         if (finalTime >= bestTime) {
-            Text(text = "🏆 RECORD", color = Color(0xFFfbbf24), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+            Text(text = "🏆 RECORD", color = Color(0xFFfbbf24), fontSize = (11 * scale).sp, fontWeight = FontWeight.ExtraBold)
         } else {
-            Text(text = "Best: ${bestTime}s", color = Color.White.copy(alpha = 0.4f), fontSize = 10.sp)
+            Text(text = "Best: ${bestTime}s", color = Color.White.copy(alpha = 0.4f), fontSize = (10 * scale).sp)
         }
     }
 }
 
 @Composable
 private fun FinalScoreDisplay(finalScore: Int, bestScore: Int) {
+    val scale = rememberAdaptiveScale()
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = "SCORE", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        Text(text = "$finalScore", color = Color(0xFF38BDF8), fontSize = 30.sp, fontWeight = FontWeight.Black)
+        Text(text = "SCORE", color = Color.White.copy(alpha = 0.5f), fontSize = (12 * scale).sp, fontWeight = FontWeight.Bold)
+        Text(text = "$finalScore", color = Color(0xFF38BDF8), fontSize = (30 * scale).sp, fontWeight = FontWeight.Black)
         if (finalScore >= bestScore) {
-            Text(text = "🏆 RECORD", color = Color(0xFF38BDF8), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+            Text(text = "🏆 RECORD", color = Color(0xFF38BDF8), fontSize = (11 * scale).sp, fontWeight = FontWeight.ExtraBold)
         } else {
-            Text(text = "Best: $bestScore", color = Color.White.copy(alpha = 0.4f), fontSize = 10.sp)
+            Text(text = "Best: $bestScore", color = Color.White.copy(alpha = 0.4f), fontSize = (10 * scale).sp)
         }
     }
 }
 
 @Composable
 fun StatItem(emoji: String, value: String, label: String) {
+    val scale = rememberAdaptiveScale()
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = emoji, fontSize = 24.sp)
-        Text(text = value, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Text(text = label, color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp)
+        Text(text = emoji, fontSize = (24 * scale).sp)
+        Text(text = value, color = Color.White, fontSize = (22 * scale).sp, fontWeight = FontWeight.Bold)
+        Text(text = label, color = Color.White.copy(alpha = 0.5f), fontSize = (11 * scale).sp)
     }
 }
 
 @Composable
 fun InstructionItem(emoji: String, text: String) {
+    val scale = rememberAdaptiveScale()
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 3.dp)) {
-        Text(text = emoji, fontSize = 20.sp, modifier = Modifier.padding(end = 10.dp))
-        Text(text = text, color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp)
+        Text(text = emoji, fontSize = (20 * scale).sp, modifier = Modifier.padding(end = 10.dp))
+        Text(text = text, color = Color.White.copy(alpha = 0.85f), fontSize = (13 * scale).sp)
     }
 }

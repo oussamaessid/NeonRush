@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.neonrush.ui.theme.rememberAdaptiveScale
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -35,6 +36,7 @@ fun HomeScreen(
 ) {
     BackHandler(enabled = true) { onQuit() }
 
+    val scale = rememberAdaptiveScale()
     var isBannerLoaded by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -73,14 +75,14 @@ fun HomeScreen(
                 Text(
                     text          = "NEON",
                     color         = Color(0xFF38BDF8),
-                    fontSize      = 48.sp,
+                    fontSize      = (48 * scale).sp,
                     fontWeight    = FontWeight.Black,
                     letterSpacing = 6.sp
                 )
                 Text(
                     text          = "RUSH",
                     color         = Color(0xFFfbbf24),
-                    fontSize      = 48.sp,
+                    fontSize      = (48 * scale).sp,
                     fontWeight    = FontWeight.Black,
                     letterSpacing = 6.sp
                 )
@@ -94,7 +96,7 @@ fun HomeScreen(
 
             Button(
                 onClick   = onPlay,
-                modifier  = Modifier.fillMaxWidth().height(58.dp),
+                modifier  = Modifier.fillMaxWidth().height((58 * scale).dp),
                 colors    = ButtonDefaults.buttonColors(containerColor = Color(0xFF38BDF8)),
                 shape     = RoundedCornerShape(18.dp),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
@@ -102,7 +104,7 @@ fun HomeScreen(
                 Text(
                     text       = "JOUER",
                     fontWeight = FontWeight.Black,
-                    fontSize   = 22.sp,
+                    fontSize   = (22 * scale).sp,
                     color      = Color(0xFF0F172A)
                 )
             }
@@ -141,6 +143,7 @@ fun HomeScreen(
 
 @Composable
 private fun StatsSection(stats: GameStats) {
+    val scale = rememberAdaptiveScale()
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -151,7 +154,7 @@ private fun StatsSection(stats: GameStats) {
         Text(
             text          = "MES STATISTIQUES",
             color         = Color.White.copy(alpha = 0.5f),
-            fontSize      = 11.sp,
+            fontSize      = (11 * scale).sp,
             fontWeight    = FontWeight.Bold,
             letterSpacing = 2.sp
         )
@@ -169,17 +172,19 @@ private fun StatsSection(stats: GameStats) {
 
 @Composable
 private fun StatBig(emoji: String, value: String, label: String, color: Color) {
+    val scale = rememberAdaptiveScale()
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(emoji, fontSize = 26.sp)
+        Text(emoji, fontSize = (26 * scale).sp)
         Spacer(modifier = Modifier.height(2.dp))
-        Text(value, color = color, fontSize = 30.sp, fontWeight = FontWeight.Black)
+        Text(value, color = color, fontSize = (30 * scale).sp, fontWeight = FontWeight.Black)
         Text(label, color = Color.White.copy(alpha = 0.4f),
-            fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            fontSize = (10 * scale).sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
     }
 }
 
 @Composable
 private fun InstructionsSection() {
+    val scale = rememberAdaptiveScale()
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -189,7 +194,7 @@ private fun InstructionsSection() {
         Text(
             text          = "COMMENT JOUER",
             color         = Color.White.copy(alpha = 0.5f),
-            fontSize      = 11.sp,
+            fontSize      = (11 * scale).sp,
             fontWeight    = FontWeight.Bold,
             letterSpacing = 2.sp,
             modifier      = Modifier.fillMaxWidth(),
@@ -207,14 +212,15 @@ private fun InstructionsSection() {
 
 @Composable
 private fun InstructionRow(emoji: String, title: String, desc: String) {
+    val scale = rememberAdaptiveScale()
     Row(
         modifier          = Modifier.padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(emoji, fontSize = 20.sp, modifier = Modifier.width(34.dp))
+        Text(emoji, fontSize = (20 * scale).sp, modifier = Modifier.width(34.dp))
         Column {
-            Text(title, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            Text(desc,  color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+            Text(title, color = Color.White, fontSize = (12 * scale).sp, fontWeight = FontWeight.Bold)
+            Text(desc,  color = Color.White.copy(alpha = 0.5f), fontSize = (10 * scale).sp)
         }
     }
 }

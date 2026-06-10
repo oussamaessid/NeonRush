@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.neonrush.ads.AdManager
 import app.neonrush.data.model.GameState
+import app.neonrush.ui.theme.rememberAdaptiveScale
 
 @Composable
 fun GameOverOverlay(
@@ -27,6 +28,7 @@ fun GameOverOverlay(
     onBackToMenu: () -> Unit
 ) {
     val activity = LocalContext.current as Activity
+    val scale    = rememberAdaptiveScale()
     var adReady  by remember { mutableStateOf(AdManager.isRewardedAdReady()) }
     var loading  by remember { mutableStateOf(false) }
 
@@ -51,23 +53,23 @@ fun GameOverOverlay(
                     Brush.verticalGradient(listOf(Color(0xFF1E293B), Color(0xFF0F172A))),
                     RoundedCornerShape(28.dp)
                 )
-                .padding(32.dp),
+                .padding((32 * scale).dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("GAME OVER", color = Color(0xFFF43F5E),
-                fontSize = 34.sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
+                fontSize = (34 * scale).sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
 
             Spacer(Modifier.height(20.dp))
 
             Text("SCORE", color = Color.White.copy(alpha = 0.5f),
-                fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                fontSize = (12 * scale).sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
             Text(gameState.score.toString(), color = Color(0xFF38BDF8),
-                fontSize = 52.sp, fontWeight = FontWeight.Black)
+                fontSize = (52 * scale).sp, fontWeight = FontWeight.Black)
 
             Spacer(Modifier.height(8.dp))
 
             Text("Temps : ${gameState.elapsedTime}s", color = Color.White.copy(alpha = 0.5f),
-                fontSize = 14.sp)
+                fontSize = (14 * scale).sp)
 
             Spacer(Modifier.height(28.dp))
 
@@ -85,7 +87,7 @@ fun GameOverOverlay(
                             onSkipped  = { loading = false }
                         )
                     },
-                    modifier = Modifier.fillMaxWidth().height(58.dp),
+                    modifier = Modifier.fillMaxWidth().height((58 * scale).dp),
                     colors   = ButtonDefaults.buttonColors(containerColor = Color(0xFF22C55E)),
                     shape    = RoundedCornerShape(16.dp),
                     enabled  = !loading
@@ -95,34 +97,32 @@ fun GameOverOverlay(
                             modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
                     } else {
                         Text("▶  Regarder une pub pour continuer",
-                            fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color.White,
+                            fontWeight = FontWeight.Bold, fontSize = (15 * scale).sp, color = Color.White,
                             textAlign = TextAlign.Center)
                     }
                 }
                 Spacer(Modifier.height(10.dp))
             }
 
-            // ── Rejouer ───────────────────────────────────────────────────
             Button(
                 onClick  = onReplay,
-                modifier = Modifier.fillMaxWidth().height(54.dp),
+                modifier = Modifier.fillMaxWidth().height((54 * scale).dp),
                 colors   = ButtonDefaults.buttonColors(containerColor = Color(0xFF38BDF8)),
                 shape    = RoundedCornerShape(16.dp)
             ) {
                 Text("REJOUER", fontWeight = FontWeight.Black,
-                    fontSize = 18.sp, color = Color(0xFF0F172A))
+                    fontSize = (18 * scale).sp, color = Color(0xFF0F172A))
             }
 
             Spacer(Modifier.height(10.dp))
 
-            // ── Menu ──────────────────────────────────────────────────────
             OutlinedButton(
                 onClick  = onBackToMenu,
-                modifier = Modifier.fillMaxWidth().height(48.dp),
+                modifier = Modifier.fillMaxWidth().height((48 * scale).dp),
                 shape    = RoundedCornerShape(16.dp),
                 colors   = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
             ) {
-                Text("Menu principal", fontSize = 15.sp)
+                Text("Menu principal", fontSize = (15 * scale).sp)
             }
         }
     }

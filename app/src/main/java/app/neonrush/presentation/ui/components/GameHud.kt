@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.neonrush.data.model.GameState
+import app.neonrush.ui.theme.rememberAdaptiveScale
 
 @Composable
 fun GameHud(
@@ -21,10 +22,11 @@ fun GameHud(
     onQuit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val scale = rememberAdaptiveScale()
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 60.dp, start = 32.dp, end = 32.dp)
+            .padding(top = (60 * scale).dp, start = (32 * scale).dp, end = (32 * scale).dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -33,7 +35,7 @@ fun GameHud(
             androidx.compose.material3.IconButton(
                 onClick = onQuit,
                 modifier = Modifier
-                    .size(48.dp)
+                    .size((48 * scale).dp)
                     .background(
                         color = Color.White.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(12.dp)
@@ -42,7 +44,7 @@ fun GameHud(
                 Text(
                     text = "✕",
                     color = Color.White.copy(alpha = 0.6f),
-                    fontSize = 24.sp,
+                    fontSize = (24 * scale).sp,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -80,11 +82,12 @@ fun GameHud(
 
 @Composable
 private fun TimeDisplay(elapsedTime: Long, bestTime: Long) {
+    val scale = rememberAdaptiveScale()
     Column(horizontalAlignment = Alignment.Start) {
-        Text(text = "TEMPS", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        Text(text = "${elapsedTime}s", color = Color(0xFFfbbf24), fontSize = 36.sp, fontWeight = FontWeight.Black)
+        Text(text = "TEMPS", color = Color.White.copy(alpha = 0.6f), fontSize = (12 * scale).sp, fontWeight = FontWeight.Bold)
+        Text(text = "${elapsedTime}s", color = Color(0xFFfbbf24), fontSize = (36 * scale).sp, fontWeight = FontWeight.Black)
         if (bestTime > 0) {
-            Text(text = "Best: ${bestTime}s", color = Color(0xFFfbbf24).copy(alpha = 0.5f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text(text = "Best: ${bestTime}s", color = Color(0xFFfbbf24).copy(alpha = 0.5f), fontSize = (11 * scale).sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -98,35 +101,33 @@ private fun PowerUpsAndComboDisplay(
     combo: Int,
     comboTimeRemaining: Int
 ) {
+    val scale = rememberAdaptiveScale()
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(horizontal = 8.dp)
     ) {
-        // Shield — couleur cyan assortie au ballon
         if (hasShield && shieldTimeRemaining > 0) {
-            Text(text = "🛡️", fontSize = 28.sp)
+            Text(text = "🛡️", fontSize = (28 * scale).sp)
             Text(
                 text = "${shieldTimeRemaining}s",
-                color = Color(0xFF6EE7B7),  // Vert menthe — même que le ballon shield
-                fontSize = 22.sp,
+                color = Color(0xFF6EE7B7),
+                fontSize = (22 * scale).sp,
                 fontWeight = FontWeight.Black
             )
             Spacer(modifier = Modifier.height(4.dp))
         }
 
-        // Multiplier
         if (scoreMultiplier > 1f && multiplierTimeRemaining > 0) {
-            Text(text = "⭐", fontSize = 22.sp)
+            Text(text = "⭐", fontSize = (22 * scale).sp)
             Text(
                 text = "${multiplierTimeRemaining}s",
                 color = Color(0xFFfbbf24),
-                fontSize = 20.sp,
+                fontSize = (20 * scale).sp,
                 fontWeight = FontWeight.Black
             )
             Spacer(modifier = Modifier.height(4.dp))
         }
 
-        // Combo (uniquement si ≥ 3 et timer actif)
         if (combo >= 3 && comboTimeRemaining > 0) {
             val comboColor = when {
                 combo >= 10 -> Color(0xFFEC4899)
@@ -136,9 +137,9 @@ private fun PowerUpsAndComboDisplay(
             Text(
                 text = "🔥",
                 fontSize = when {
-                    combo >= 10 -> 28.sp
-                    combo >= 6  -> 24.sp
-                    else        -> 20.sp
+                    combo >= 10 -> (28 * scale).sp
+                    combo >= 6  -> (24 * scale).sp
+                    else        -> (20 * scale).sp
                 }
             )
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
@@ -146,9 +147,9 @@ private fun PowerUpsAndComboDisplay(
                     text = "×$combo",
                     color = comboColor,
                     fontSize = when {
-                        combo >= 10 -> 28.sp
-                        combo >= 6  -> 24.sp
-                        else        -> 20.sp
+                        combo >= 10 -> (28 * scale).sp
+                        combo >= 6  -> (24 * scale).sp
+                        else        -> (20 * scale).sp
                     },
                     fontWeight = FontWeight.Black
                 )
@@ -156,7 +157,7 @@ private fun PowerUpsAndComboDisplay(
                 Text(
                     text = "${comboTimeRemaining}s",
                     color = comboColor.copy(alpha = 0.8f),
-                    fontSize = 18.sp,
+                    fontSize = (18 * scale).sp,
                     fontWeight = FontWeight.Black
                 )
             }
@@ -166,22 +167,23 @@ private fun PowerUpsAndComboDisplay(
 
 @Composable
 private fun ScoreDisplay(score: Int, bestScore: Int, scoreMultiplier: Float) {
+    val scale = rememberAdaptiveScale()
     Column(horizontalAlignment = Alignment.End) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = "SCORE", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(text = "SCORE", color = Color.White.copy(alpha = 0.6f), fontSize = (12 * scale).sp, fontWeight = FontWeight.Bold)
             if (scoreMultiplier > 1f) {
                 Text(
                     text = " ×${scoreMultiplier.toInt()}",
                     color = Color(0xFFfbbf24),
-                    fontSize = 14.sp,
+                    fontSize = (14 * scale).sp,
                     fontWeight = FontWeight.ExtraBold,
                     modifier = Modifier.padding(start = 4.dp)
                 )
             }
         }
-        Text(text = score.toString(), color = Color(0xFF38BDF8), fontSize = 36.sp, fontWeight = FontWeight.Black)
+        Text(text = score.toString(), color = Color(0xFF38BDF8), fontSize = (36 * scale).sp, fontWeight = FontWeight.Black)
         if (bestScore > 0) {
-            Text(text = "Best: $bestScore", color = Color(0xFF38BDF8).copy(alpha = 0.5f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text(text = "Best: $bestScore", color = Color(0xFF38BDF8).copy(alpha = 0.5f), fontSize = (11 * scale).sp, fontWeight = FontWeight.Bold)
         }
     }
 }
