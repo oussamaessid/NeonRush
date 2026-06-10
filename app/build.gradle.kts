@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.neonrush"
+    namespace = "app.neonrush"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.neonrush"
+        applicationId = "app.neonrush"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

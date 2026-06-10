@@ -3,7 +3,7 @@ package app.neonrush.ads
 import android.app.Activity
 import android.content.Context
 import android.util.Log
-import com.example.neonrush.BuildConfig
+import app.neonrush.BuildConfig
 import com.google.android.gms.ads.*
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.google.android.gms.ads.rewarded.RewardedAd
