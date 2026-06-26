@@ -69,10 +69,8 @@ fun GameScreen(
         label = "playerColor"
     )
 
-    val playerGradient by remember(playerColor) {
-        derivedStateOf {
-            Brush.radialGradient(colors = listOf(Color.White, playerColor), radius = 55f)
-        }
+    val playerGradient = remember(playerColor, gameState.playerRadius) {
+        Brush.radialGradient(colors = listOf(Color.White, playerColor), radius = gameState.playerRadius * 1.06f)
     }
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF020617)) {
@@ -122,8 +120,7 @@ fun GameScreen(
                     playerY        = size.height * 0.85f,
                     playerGradient = playerGradient,
                     glowColor      = playerColor,
-                    // ✅ FIX : glow réduit → supprime le cercle visible autour du joueur
-                    glowSize       = 46f
+                    playerRadius   = gameState.playerRadius
                 )
             }
 

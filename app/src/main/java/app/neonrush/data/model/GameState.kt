@@ -9,6 +9,7 @@ data class GameState(
     val playerX: Float = 0f,
     val screenWidth: Float = 0f,
     val screenHeight: Float = 0f,
+    val playerRadius: Float = 52f,
     val hasShield: Boolean = false,
     val shieldTimeRemaining: Int = 0,
     val scoreMultiplier: Float = 1f,

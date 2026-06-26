@@ -15,6 +15,8 @@ import kotlin.coroutines.coroutineContext
 import kotlin.math.abs
 import kotlin.random.Random
 
+private const val REFERENCE_SCREEN_PX = 1080f
+
 class GameViewModel(
     private val repository: GameRepository = GameRepository(),
     private val spawnItemUseCase: SpawnItemUseCase = SpawnItemUseCase(),
@@ -79,12 +81,14 @@ class GameViewModel(
     }
 
     fun updateScreenDimensions(width: Float, height: Float) {
+        val scale = (width / REFERENCE_SCREEN_PX).coerceIn(0.65f, 1.25f)
         repository.updateGameState { state ->
             val newPlayerX = if (state.playerX == 0f) width / 2 else state.playerX
             state.copy(
                 screenWidth  = width,
                 screenHeight = height,
-                playerX      = newPlayerX
+                playerX      = newPlayerX,
+                playerRadius = 52f * scale
             )
         }
         if (targetX == 0f) targetX = width / 2
@@ -216,24 +220,25 @@ class GameViewModel(
                     else                 -> 1
                 }
 
+                val itemScale = (state.screenWidth / REFERENCE_SCREEN_PX).coerceIn(0.65f, 1.25f)
                 repeat(balloonCount) { index ->
-                    val offsetRange = 250f
+                    val offsetRange = 250f * itemScale
                     val offset = when (index) {
                         0    -> 0f
                         1    -> -offsetRange
                         else -> offsetRange
                     }
 
+                    val margin = 50f * itemScale
                     val balloonX = (state.playerX + offset)
-                        .coerceIn(50f, state.screenWidth - 50f)
+                        .coerceIn(margin, state.screenWidth - margin)
 
                     repository.addItem(
                         GameItem(
                             x     = balloonX,
                             y     = -60f - (index * 80f),
-                            size  = 72f,
+                            size  = 72f * itemScale,
                             type  = ItemType.SHIELD,
-                            // ✅ speed toujours positive → descend vers le bas
                             speed = state.currentSpeed.coerceAtLeast(4f) * 0.65f
                         )
                     )
@@ -293,6 +298,7 @@ class GameViewModel(
                 item            = updatedItem,
                 playerX         = state.playerX,
                 playerY         = playerY,
+                playerRadius    = state.playerRadius,
                 hasShield       = powerUp.hasShield,
                 scoreMultiplier = powerUp.scoreMultiplier,
                 combo           = state.combo,
@@ -305,7 +311,7 @@ class GameViewModel(
                 handleCollision(collision, updatedItem, currentTime)
                 itemsToRemove.add(updatedItem)
             } else {
-                if (collisionUseCase.checkNearMiss(updatedItem, state.playerX, playerY, state.screenHeight)) {
+                if (collisionUseCase.checkNearMiss(updatedItem, state.playerX, playerY, state.playerRadius, state.screenHeight)) {
                     handleNearMiss()
                 }
                 if (updatedItem.y > state.screenHeight + 100) {

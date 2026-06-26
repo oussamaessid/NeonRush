@@ -5,6 +5,8 @@ import app.neonrush.data.model.ItemType
 import kotlin.math.abs
 import kotlin.random.Random
 
+private const val REFERENCE_SCREEN_PX = 1080f
+
 class SpawnItemUseCase {
 
     fun execute(
@@ -42,6 +44,7 @@ class SpawnItemUseCase {
             else base
         }
 
+        val scale = (screenWidth / REFERENCE_SCREEN_PX).coerceIn(0.65f, 1.25f)
         val items = mutableListOf<GameItem>()
 
         // ── Power-ups ──────────────────────────────────────────────
@@ -50,13 +53,13 @@ class SpawnItemUseCase {
             items.add(createSmartItem(
                 screenWidth, playerX, safeZoneStart, safeZoneEnd,
                 safeZoneIndex, zoneWidth, currentSpeed, slowMotionActive,
-                ItemType.SHIELD
+                scale, ItemType.SHIELD
             ))
         } else if (powerUpChance < 0.055f && scoreMultiplier <= 1f) {
             items.add(createSmartItem(
                 screenWidth, playerX, safeZoneStart, safeZoneEnd,
                 safeZoneIndex, zoneWidth, currentSpeed, slowMotionActive,
-                ItemType.MULTIPLIER
+                scale, ItemType.MULTIPLIER
             ))
         }
 
@@ -80,7 +83,7 @@ class SpawnItemUseCase {
         // ── Spawn du burst avec règle anti-adjacence ───────────────
         // FIX : on ne place jamais deux items du même type
         // à moins de MIN_SAME_TYPE_DIST px l'un de l'autre.
-        val MIN_SAME_TYPE_DIST = 170f
+        val MIN_SAME_TYPE_DIST = 170f * scale
         val spawnedThisBurst = mutableListOf<GameItem>()
 
         repeat(burstCount) {
@@ -92,7 +95,7 @@ class SpawnItemUseCase {
                 val tentative = createSmartItem(
                     screenWidth, playerX, safeZoneStart, safeZoneEnd,
                     safeZoneIndex, zoneWidth, currentSpeed, slowMotionActive,
-                    wantType
+                    scale, wantType
                 )
 
                 // Vérifie que le type n'est pas déjà trop proche d'un item identique
@@ -111,7 +114,7 @@ class SpawnItemUseCase {
                     candidate = createSmartItem(
                         screenWidth, playerX, safeZoneStart, safeZoneEnd,
                         safeZoneIndex, zoneWidth, currentSpeed, slowMotionActive,
-                        ItemType.BONUS
+                        scale, ItemType.BONUS
                     )
                 }
             }
@@ -132,6 +135,7 @@ class SpawnItemUseCase {
         zoneWidth: Float,
         currentSpeed: Float,
         slowMotionActive: Boolean,
+        scale: Float,
         forceType: ItemType? = null
     ): GameItem {
         var itemX    = Random.nextFloat() * screenWidth
@@ -151,20 +155,20 @@ class SpawnItemUseCase {
 
             // Évite de coller au joueur
             val distToPlayer = abs(itemX - playerX)
-            if (distToPlayer < 120f && Random.nextFloat() < 0.6f) {
+            if (distToPlayer < 120f * scale && Random.nextFloat() < 0.6f) {
                 itemX = if (playerX < screenWidth / 2) {
-                    (playerX + 150f).coerceAtMost(screenWidth - 50f)
+                    (playerX + 150f * scale).coerceAtMost(screenWidth - 50f * scale)
                 } else {
-                    (playerX - 150f).coerceAtLeast(50f)
+                    (playerX - 150f * scale).coerceAtLeast(50f * scale)
                 }
             }
         }
 
         val itemSize = when (itemType) {
-            ItemType.SHIELD     -> 72f
-            ItemType.MULTIPLIER -> 72f
-            ItemType.BONUS      -> 62f
-            ItemType.HAZARD     -> 88f
+            ItemType.SHIELD     -> 72f * scale
+            ItemType.MULTIPLIER -> 72f * scale
+            ItemType.BONUS      -> 62f * scale
+            ItemType.HAZARD     -> 88f * scale
         }
 
         val speedVariation = if (slowMotionActive) 0.5f else 1.0f

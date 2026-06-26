@@ -128,7 +128,7 @@ private fun DrawScope.drawHazardItem(item: GameItem, hazardPath: Path) {
 //     - Côtés qui descendent et convergent vers la pointe du bas
 private fun DrawScope.drawShieldIconOpen(cx: Float, cy: Float, s: Float) {
     val strokeStyle = Stroke(
-        width = 5f,
+        width = (s * 0.24f).coerceAtLeast(2f),
         cap   = StrokeCap.Round,
         join  = StrokeJoin.Round
     )
@@ -163,7 +163,7 @@ private fun DrawScope.drawShieldIconOpen(cx: Float, cy: Float, s: Float) {
 // ── Icône x2 — drawLine uniquement ──────────────────────────────────────────
 private fun DrawScope.drawX2IconFilled(cx: Float, cy: Float, s: Float) {
     val c  = MULTI_ICON_COLOR
-    val sw = 4f
+    val sw = (s * 0.19f).coerceAtLeast(2f)
 
     val xCx = cx - s * 0.42f
     val xR  = s * 0.50f
@@ -197,8 +197,8 @@ fun DrawScope.drawPlayer(
     playerY: Float,
     playerGradient: Brush,
     glowColor: Color,
-    glowSize: Float
+    playerRadius: Float
 ) {
-    drawCircle(color = glowColor.copy(alpha = 0.50f), radius = glowSize, center = Offset(playerX, playerY))
-    drawCircle(brush = playerGradient,                 radius = 52f,      center = Offset(playerX, playerY))
+    drawCircle(color = glowColor.copy(alpha = 0.50f), radius = playerRadius * 0.885f, center = Offset(playerX, playerY))
+    drawCircle(brush = playerGradient,                radius = playerRadius,           center = Offset(playerX, playerY))
 }

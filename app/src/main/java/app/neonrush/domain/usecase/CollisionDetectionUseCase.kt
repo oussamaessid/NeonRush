@@ -22,6 +22,7 @@ class CollisionDetectionUseCase {
         item: GameItem,
         playerX: Float,
         playerY: Float,
+        playerRadius: Float,
         hasShield: Boolean,
         scoreMultiplier: Float,
         combo: Int,
@@ -30,7 +31,6 @@ class CollisionDetectionUseCase {
         lastBonusTime: Long
     ): CollisionResult {
 
-        val playerRadius = 52f
         val itemRadius = item.size / 2f
         val distance = hypot(playerX - item.x, playerY - item.y)
         val collisionDist = playerRadius + itemRadius
@@ -104,12 +104,12 @@ class CollisionDetectionUseCase {
         item: GameItem,
         playerX: Float,
         playerY: Float,
+        playerRadius: Float,
         screenHeight: Float
     ): Boolean {
         if (item.type != ItemType.HAZARD) return false
         if (item.y < screenHeight * 0.75f) return false
 
-        val playerRadius = 52f
         val itemRadius = item.size / 2f
         val distance = hypot(playerX - item.x, playerY - item.y)
         val nearMissDist = playerRadius + itemRadius + 35f
